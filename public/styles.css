@@ -1,0 +1,308 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f3f4f6; /* gray-100 */
+    color: #1f2937; /* gray-800 */
+    line-height: 1.5;
+    /* Ensure body takes full height for absolute positioning */
+    min-height: 100vh;
+    position: relative; /* Needed for absolute positioning of wallet widget */
+}
+
+.container {
+    max-width: 640px; /* Tailwind's max-w-md */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    /* Add padding to avoid content going under fixed elements if any */
+    padding-top: 3rem; /* Adjust based on header/widget height */
+}
+
+/* Utility Classes (Simplified) */
+.hidden { display: none; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.font-bold { font-weight: 700; }
+.font-medium { font-weight: 500; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-xl { font-size: 1.25rem; }
+.my-6 { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-2 { margin-top: 0.5rem; }
+.ml-2 { margin-left: 0.5rem; } /* For spinner text */
+.p-4 { padding: 1rem; }
+.p-3 { padding: 0.75rem; }
+.p-2 { padding: 0.5rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; } /* For tooltip items */
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } /* For prompt buttons */
+.pl-5 { padding-left: 1.25rem; } /* For list-disc */
+.rounded { border-radius: 0.25rem; }
+.rounded-full { border-radius: 9999px; } /* For circular wallet button */
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-md { border-radius: 0.375rem; } /* For tooltip */
+.border { border-width: 1px; }
+.border-gray-200 { border-color: #e5e7eb; }
+.border-gray-300 { border-color: #d1d5db; }
+.border-yellow-400 { border-color: #fbbf24; } /* For soon expiring */
+.shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); } /* For tooltip */
+.shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+.w-full { width: 100%; }
+.space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+.space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+.space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; } /* For error lists */
+
+/* Colors */
+.bg-white { background-color: #fff; }
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-gray-50 { background-color: #f9fafb; }
+.bg-blue-500 { background-color: #3b82f6; }
+.bg-purple-500 { background-color: #8b5cf6; }
+.bg-green-500 { background-color: #10b981; }
+.bg-red-100 { background-color: #fee2e2; }
+.bg-yellow-100 { background-color: #fef3c7; } /* For soon expiring */
+.bg-gray-200 { background-color: #e5e7eb; } /* For wallet button */
+.list-disc { list-style-type: disc; }
+
+.text-white { color: #fff; }
+.text-gray-500 { color: #6b7280; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-700 { color: #374151; }
+.text-gray-800 { color: #1f2937; }
+.text-gray-900 { color: #111827; }
+.text-green-600 { color: #16a34a; }
+.text-orange-500 { color: #f97316; }
+.text-red-500 { color: #ef4444; } /* For prompt load error */
+.text-red-700 { color: #b91c1c; }
+.hover\:bg-blue-600:hover { background-color: #2563eb; }
+.hover\:bg-purple-600:hover { background-color: #7c3aed; }
+.hover\:bg-green-600:hover { background-color: #059669; }
+.hover\:bg-gray-200:hover { background-color: #e5e7eb; } /* For prompt buttons */
+.hover\:bg-gray-300:hover { background-color: #d1d5db; } /* For wallet button */
+.focus\:outline-none:focus { outline: 2px solid transparent; outline-offset: 2px; }
+.focus\:ring-2:focus { outline: 2px solid transparent; outline-offset: 2px; }
+.focus\:ring-blue-500:focus { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000); --tw-ring-color: #3b82f6; }
+.disabled\:opacity-50:disabled { opacity: 0.5; }
+.line-through { text-decoration: line-through; }
+.italic { font-style: italic; }
+.absolute { position: absolute; }
+.top-4 { top: 1rem; }
+.right-4 { right: 1rem; }
+.right-0 { right: 0; }
+.mt-1 { margin-top: 0.25rem; }
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+
+/* Flexbox Utilities */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-2 { gap: 0.5rem; }
+
+/* Form Elements */
+textarea, select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    color: #374151;
+}
+textarea:focus, select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Buttons */
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    /* Ensure buttons don't stretch */
+    flex-shrink: 0;
+}
+
+/* Whisper Card Specific */
+.whisper-card.expired, .whisper-card.forgotten {
+    background-color: #f9fafb; /* bg-gray-50 or similar for faded look */
+    color: #6b7280; /* text-gray-500 */
+}
+.whisper-card.soon-expiring {
+    background-color: #fef3c7; /* bg-yellow-100 */
+    border-color: #fbbf24; /* border-yellow-400 */
+}
+
+/* --- New Styles for Enhancements --- */
+
+/* Wallet Widget Styles */
+#wallet-widget {
+    position: absolute;
+    top: 1rem; /* 16px */
+    right: 1rem; /* 16px */
+    z-index: 10;
+}
+
+#wallet-button {
+    padding: 0.5rem; /* 8px */
+    border-radius: 50%; /* Make it circular if using an icon */
+    background-color: #e5e7eb; /* gray-200 */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#wallet-button:hover {
+    background-color: #d1d5db; /* gray-300 */
+}
+
+#wallet-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* blue-500 focus ring */
+}
+
+/* Wallet Tooltip */
+#wallet-tooltip {
+    position: absolute;
+    right: 0;
+    margin-top: 0.25rem; /* 4px */
+    width: 12rem; /* 192px */
+    background-color: #fff;
+    border-radius: 0.375rem; /* 6px */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    padding: 0.25rem 0; /* 4px top/bottom */
+    display: none; /* Hidden by default */
+    z-index: 20;
+    font-size: 0.75rem; /* text-xs */
+}
+
+#wallet-tooltip-text {
+    display: block;
+    padding: 0.5rem 1rem; /* 8px 16px */
+    color: #374151; /* gray-700 */
+}
+
+/* Ensure the spinner class is defined and visible */
+.spinner {
+    border: 2px solid #f3f4f6; /* gray-100 - background ring */
+    border-top: 2px solid #3b82f6; /* blue-500 - spinning part */
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    display: inline-block; /* Ensure it takes up space and is visible */
+    flex-shrink: 0; /* Prevent it from shrinking in flex containers */
+}
+
+/* Keyframes for the spinning animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Optional: Add a class to hide elements visually but keep them accessible for screen readers if needed */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Ensure the loading spinner container is visible when not hidden */
+#loading-spinner:not(.hidden) {
+    display: flex; /* Use flex to align items center */
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ensure the spinner text has some margin */
+.spinner-text {
+    margin-left: 0.5rem; /* 8px space between spinner and text */
+}
+
+#prompt-buttons-container {
+    margin-bottom: 0.75rem; /* mb-3 */
+}
+
+#prompt-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem; /* 8px */
+}
+
+#ephemeral-prompts-container {
+    margin-bottom: 0.75rem; /* mb-3 */
+}
+
+#ephemeral-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem; /* 8px */
+}
+
+.prompt-button { /* Reusing the class name */
+    padding: 0.25rem 0.5rem; /* 4px 8px */
+    font-size: 0.75rem; /* text-xs */
+    background-color: #f9fafb; /* gray-50 or similar light */
+    color: #4b5563; /* gray-600 */
+    border: 1px solid #e5e7eb; /* gray-200 */
+    border-radius: 0.25rem; /* rounded */
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    /* Prevent button from stretching */
+    flex-shrink: 0;
+}
+
+.prompt-button:hover {
+    background-color: #f3f4f6; /* gray-100 */
+    border-color: #d1d5db; /* gray-300 */
+}
+
+.prompt-button:focus {
+    outline: none;
+    border-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* blue-500 focus ring */
+}
+
+#loading-spinner {
+    display: none; /* Hidden by default */
+}
+
+#disconnect-button {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 1rem; /* 8px 16px */
+    color: #4b5563; /* gray-600 */
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+#disconnect-button:hover {
+    background-color: #f9fafb; /* gray-50 or similar light hover */
+}

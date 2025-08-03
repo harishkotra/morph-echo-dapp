@@ -1,0 +1,25 @@
+{
+  "name": "morph-echo-dapp",
+  "version": "1.0.0",
+  "description": "Simple frontend for MorphEcho dApp using Node.js and Express",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "openai": "^5.11.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "babelify": "^10.0.0",
+    "browserify": "^17.0.1"
+  }
+}

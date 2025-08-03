@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MorphEcho - Decentralized Whispers</title>
-    <!-- Pass contract address from server environment -->
     <meta name="contract-address" content="0x561C97731839A1C65070B424283A7cb3d41027Da">
-    <link rel="stylesheet" href="styles.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 font-sans">
-    <!-- Wallet Widget (Profile Icon) -->
     <div id="wallet-widget" class="absolute top-4 right-4 z-10">
         <button id="wallet-button" class="p-2 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-haspopup="true" aria-expanded="false">
-            <!-- Icons for disconnected and connected states -->
             <span id="wallet-icon-disconnected">👤</span>
             <span id="wallet-icon-connected" class="hidden">🔐</span>
         </button>
-        <!-- Tooltip/Popup for wallet status/details -->
-        <!-- Modify this div -->
+
         <div id="wallet-tooltip" class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 hidden z-20 text-xs">
             <div id="wallet-info-connected" class="hidden">
                 <span id="wallet-connected-address" class="block px-4 py-2 text-gray-700 font-medium"></span>
@@ -29,84 +28,119 @@
         </div>
     </div>
 
-    <div id="app" class="container mx-auto p-4 max-w-md relative"> <!-- Added 'relative' for absolute positioning context -->
+    <div id="app" class="container mx-auto p-4 max-w-md relative">
         <header class="text-center my-6">
             <h1 class="text-2xl font-bold text-gray-900">MorphEcho</h1>
             <p class="text-gray-600 text-sm">Share ephemeral, AI-scrambled whispers.</p>
         </header>
 
         <main>
-            <!-- Wallet Connection Message (Alternative placement if needed) -->
-            <div id="wallet-status" class="mb-4 p-3 rounded-lg text-center hidden">
-                <p id="wallet-message" class="text-gray-700"></p>
-                <button id="connect-button-main" class="hidden mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Connect Wallet</button>
+            <div id="wallet-status" class="mb-4">
+                <div id="wallet-message" class="alert alert-info mb-3">
+                    <h5 class="alert-heading">Welcome to MorphEcho!</h5>
+                    <p>Connect your wallet to share ephemeral, AI-scrambled whispers with your community.</p>
+                    <hr>
+                    <p class="mb-0"><small>Your whispers are temporary NFTs that expire and disappear.</small></p>
+                </div>
+                <div class="text-center">
+                    <button id="connect-button-main" class="btn btn-primary btn-lg">
+                        <i class="bi bi-wallet2 me-2"></i>
+                        Connect Wallet
+                    </button>
+                </div>
             </div>
 
             <!-- Submit Form (shown when connected) -->
             <div id="submit-section" class="hidden mb-8 p-4 bg-white rounded-lg shadow-md">
                 <h2 class="text-xl font-bold mb-3 text-gray-800">Share a Whisper</h2>
+                <div id="original-preview" class="mb-3 p-2 bg-light rounded border d-none"> 
+                    <p class="text-xs fw-medium text-muted mb-1">Your Original Whisper:</p> 
+                    <p id="original-text-preview" class="text-sm text-body mb-0"></p> 
+                </div>
                 <div class="mb-3">
                     <label for="raw-whisper" class="block text-sm font-medium text-gray-700 mb-1">Your Thought (Will be scrambled by AI)</label>
                     <textarea id="raw-whisper" placeholder="Type your ephemeral thought here..." rows="3" class="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
-                <!-- Prompt Buttons Container -->
+
                 <div id="ephemeral-prompts-container" class="mb-3 hidden">
                     <p class="text-xs text-gray-500 mb-1">Need inspiration?</p>
                     <div id="ephemeral-prompts" class="flex flex-wrap gap-2">
-                        <!-- Ephemeral prompt buttons will be inserted here dynamically -->
                     </div>
                 </div>
-                <!-- Scramble Button with Spinner -->
-                <button id="scramble-button" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 flex items-center justify-center" disabled>
-                    <span id="scramble-spinner" class="spinner hidden"></span>
-                    <span id="scramble-spinner-text" class="spinner-text">Scramble with AI</span>
+
+                <!-- Scramble Button -->
+                <button id="scramble-button" class="btn btn-primary d-flex align-items-center" disabled>
+                    <span id="scramble-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span id="scramble-spinner-text" class="ms-2">Scramble with AI</span>
                 </button>
-                <div id="scramble-preview" class="hidden mt-3 p-3 bg-gray-50 rounded border border-gray-200">
-                    <p class="text-sm font-medium text-gray-700 mb-1">Scrambled Preview:</p>
-                    <p id="scrambled-text" class="text-gray-800 italic"></p>
+                <small class="text-muted ms-2">(Sends your thought to AI for transformation)</small>
+                <div id="scramble-preview" class="d-none mt-3 p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <p class="fw-medium text-body-secondary mb-0">Scrambled Preview:</p>
+                        <button id="re-scramble-button" class="btn btn-sm btn-outline-secondary py-0 px-2 d-none" type="button">
+                            <i class="bi bi-arrow-repeat"></i> Re-scramble
+                        </button>
+                    </div>
+                    <p id="scrambled-text" class="text-body fst-italic mb-0"></p>
                 </div>
-                <div id="duration-selector" class="hidden mt-3">
-                    <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">Duration (seconds)</label>
-                    <select id="duration" class="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                
+                <!-- Duration Selector -->
+                <div id="duration-selector" class="d-none mt-3">
+                    <label for="duration" class="form-label fw-medium text-body-secondary mb-1">Duration</label>
+                    <select id="duration" class="form-select">
                         <option value="3600">1 Hour</option>
                         <option value="10800">3 Hours</option>
                         <option value="86400" selected>24 Hours</option>
                         <option value="172800">2 Days</option>
                     </select>
                 </div>
-                <!-- Mint Button with Spinner -->
-                <button id="mint-button" class="hidden mt-3 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center">
-                    <span id="mint-spinner" class="spinner hidden"></span>
-                    <span id="mint-spinner-text" class="spinner-text">Mint Whisper NFT</span>
+
+                <!-- Mint Button -->
+                <button id="mint-button" class="d-none btn btn-success mt-3 d-flex align-items-center">
+                    <span id="mint-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span id="mint-spinner-text" class="ms-2">Mint Whisper NFT</span> 
                 </button>
                 <div id="submit-error" class="hidden mt-2 p-2 text-red-700 bg-red-100 rounded text-sm"></div>
             </div>
 
             <!-- Whisper Feed -->
             <div id="feed-section">
-                <h2 class="text-xl font-bold mb-3 text-gray-800">Whisper Feed</h2>
-                <!-- Loading Spinner -->
-                <div id="loading-spinner" class="hidden text-center py-4 flex items-center justify-center">
-                    <span class="spinner"></span>
-                    <span class="spinner-text ml-2">Loading whispers...</span>
+                <h2 class="h4 mb-3 fw-bold text-dark">Whisper Feed</h2>
+
+                <div id="loading-spinner" class="d-none text-center my-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="d-block mt-2">Loading whispers...</span>
                 </div>
-                <div id="feed-error" class="hidden p-2 text-red-700 bg-red-100 rounded text-sm mb-2"></div>
-                <div id="whisper-feed" class="space-y-3">
-                    <!-- Whispers will be inserted here dynamically -->
-                    <p id="no-whispers-message" class="text-gray-600 text-center py-4">No whispers found. Connect your wallet and be the first to share one!</p>
+                <div id="feed-error" class="alert alert-danger d-none mb-3" role="alert">
+                </div>
+
+                <!-- Whisper Feed Container -->
+                <div id="whisper-feed" class="row g-3">
+                    <div id="no-whispers-message" class="col-12">
+                        <div class="alert alert-danger text-center mb-0" role="alert">
+                            Connect your wallet to discover ephemeral whispers shared nearby.
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
 
-        <footer class="mt-8 text-center text-xs text-gray-500">
-            <p>MorphEcho - Decentralized Whispers</p>
-            <p class="mt-1">
-                <a href="/guidelines.html" target="_blank" class="text-blue-500 hover:underline">Community Guidelines</a>
-            </p>
-        </footer>
+        <div id="app-footer" class="fixed-bottom"> 
+            <footer class="text-center text-xs text-gray-500 py-3 bg-white border-top">
+                <p class="mb-1">MorphEcho - Decentralized Whispers</p>
+                <p>
+                    <a href="/guidelines.html" target="_blank" class="text-blue-500 hover:underline">Community Guidelines</a>
+                </p>
+            </footer>
+        </div>
     </div>
 
+    
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" integrity="sha384-7qAoOXltbVP82dhxHAUje59V5r2YsVfBafyUDxEdApLPmcdhBPg1DKg1ERo0BZlK" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js" integrity="sha512-UXYETj+vXKSURF1UlgVRLzWRS9ZiQTv3lcL4rbeLyqTXCPNZC6PTLF/Ik3uxm2Zo+E109cUpJPZfLxJsCgKSng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

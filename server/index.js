@@ -7,21 +7,16 @@ const OpenAI = require('openai');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware to parse JSON bodies (for the proxy endpoint if used)
 app.use(express.json());
-
-// Serve other static files (CSS, JS, images) from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Serve index.html dynamically to inject environment variables
 app.get('/', async (req, res) => {
     try {
         const htmlFilePath = path.join(__dirname, '../public/index.html');
         let htmlContent = await fs.readFile(htmlFilePath, 'utf8');
 
-        // --- CRITICAL: Ensure process.env.VITE_CONTRACT_ADDRESS is defined ---
-        const contractAddress = process.env.VITE_CONTRACT_ADDRESS; // Read from .env
-        console.log("Server - Contract Address from .env:", contractAddress); // Debug log
+        const contractAddress = process.env.VITE_CONTRACT_ADDRESS;
+        console.log("Server - Contract Address from .env:", contractAddress);
 
         if (!contractAddress) {
             console.error("Server Error: VITE_CONTRACT_ADDRESS not found in .env");
@@ -34,12 +29,6 @@ app.get('/', async (req, res) => {
             console.log("Server - Contract Address injected successfully:", contractAddress); // Debug log
         } else {
             console.error("Server Error: Placeholder 'YOUR_FALLBACK_ADDRESS' not found in index.html");
-            // Optionally, inject the meta tag if it's missing entirely
-            // const headEndIndex = htmlContent.indexOf('</head>');
-            // if (headEndIndex > -1) {
-            //     const metaTag = `\n<meta name="contract-address" content="${contractAddress}">\n`;
-            //     htmlContent = htmlContent.slice(0, headEndIndex) + metaTag + htmlContent.slice(headEndIndex);
-            // }
         }
 
         res.setHeader('Content-Type', 'text/html');
@@ -66,30 +55,33 @@ app.post('/api/scramble', express.json(), async (req, res) => {
     }
 
     try {
-        // --- Initialize the OpenAI client ---
-        // Configure the OpenAI client to point to the Gaia node
         const openai = new OpenAI({
-            apiKey: GAIA_API_KEY, // Required
-            baseURL: GAIA_BASE_URL, // Point to the Gaia node's OpenAI-compatible endpoint
+            apiKey: GAIA_API_KEY,
+            baseURL: GAIA_BASE_URL,
         });
-        // ------------------------------------
 
-        const prompt = `Rephrase the following user thought into a short, cryptic, poetic, or thematic message. The goal is to anonymize the specific details while capturing the core feeling or idea. Make it suitable for a public, ephemeral message feed.
+        const prompt = `You are an AI tasked with transforming raw human thoughts into ephemeral, public messages. Your goal is to anonymize the specific details while capturing the core feeling or essence poetically.
+
+Instructions:
+1.  Receive the "User Thought".
+2.  Transform it into a short, cryptic, poetic, or thematic message. This is the "Scrambled Whisper".
+3.  Prioritize styles like metaphors, haikus, riddles, or vivid imagery. Avoid literal summaries.
+4.  Obscure personal details, names, specific places, or data that could identify the user or the exact situation.
+5.  Preserve the underlying emotion or central idea (e.g., frustration, joy, nostalgia).
+6.  Keep the "Scrambled Whisper" concise and suitable for a public feed of temporary messages.
+7.  Respond ONLY with the "Scrambled Whisper". Do not include any other text, explanations, or formatting.
+8.  Do not use any external tools, search the internet, or access external data. Base the transformation solely on the provided text and your internal knowledge.
 
 User Thought: "${rawWhisper}"
 
 Scrambled Whisper:`;
 
-        // --- Make the API Call using the OpenAI SDK ---
         const chatCompletion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo", // Adjust model as needed
+            model: "Llama-3-Groq-8B-Tool",
             messages: [{ role: "user", content: prompt }],
             max_tokens: 200,
             temperature: 0.8,
         });
-        // ----------------------------------------------
-
-        // --- Process the Response ---
         if (
             chatCompletion &&
             chatCompletion.choices &&

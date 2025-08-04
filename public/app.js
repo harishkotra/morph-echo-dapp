@@ -4,7 +4,11 @@ let whisperNFTContract = null;
 let WHISPER_NFT_ABI = null;
 let CONTRACT_ADDRESS = null;
 let lastMintAttemptTime = 0;
-const MINT_ATTEMPT_COOLDOWN_MS = 60000; // minute cooldown for mint attempts
+let lastReScrambleAttemptTime = 0;
+
+const RE_SCRAMBLE_COOLDOWN_MS = 5000;
+const MINT_ATTEMPT_COOLDOWN_MS = 60000;
+let isConnectingWallet = false;
 
 // Predefined ephemeral thoughts for inspiration
 const EPHEMERAL_THOUGHT_PROMPTS = [
@@ -32,6 +36,7 @@ const walletInfoConnected = document.getElementById('wallet-info-connected');
 const walletInfoDisconnected = document.getElementById('wallet-info-disconnected');
 const walletConnectedAddress = document.getElementById('wallet-connected-address');
 const disconnectButton = document.getElementById('disconnect-button');
+const walletDropdownMenu = document.getElementById('wallet-dropdown-menu');
 
 // Main Sections and Elements
 const walletStatusDiv = document.getElementById('wallet-status');
@@ -70,6 +75,32 @@ const whisperFeedDiv = document.getElementById('whisper-feed');
 const noWhispersMessage = document.getElementById('no-whispers-message');
 
 // --- Utility Functions ---
+
+if (disconnectButton) {
+    console.log("Attaching listener to disconnect button."); 
+    disconnectButton.addEventListener('click', async (event) => {
+        console.log("Disconnect button clicked."); 
+        event.stopPropagation(); // Prevent dropdown from closing immediately
+        await disconnectWallet();
+        // Note: Hiding the dropdown menu is usually handled by Bootstrap automatically
+        // after disconnectWallet updates the UI.
+    });
+} else {
+    console.error("Disconnect button element not found when trying to attach listener!"); // Debug error
+}
+
+if (walletButton) {
+    walletButton.addEventListener('click', async (event) => {
+        console.log("Wallet icon/button clicked.");
+        event.stopPropagation();
+        if (!signer || !whisperNFTContract) {
+            console.log("Wallet icon clicked, initiating connection...");
+            await initWallet();
+        } else {
+            console.log("Wallet already connected. Click opens menu (handled by BS dropdown).");
+        }
+    });
+}
 
 /**
  * Selects a specified number of unique random elements from an array.
@@ -247,49 +278,103 @@ function formatTimeUntilExpiry(expiryTimestampSeconds) {
 }
 
 // --- Blockchain Interaction Functions ---
-
 async function initWallet() {
-    if (!WHISPER_NFT_ABI) {
-        console.error("ABI not loaded.");
-        walletMessageP.textContent = "Error: Application failed to load contract data.";
+    if (isConnectingWallet) {
+        console.warn("Wallet connection already in progress.");
+        if (walletStatusDiv && !walletStatusDiv.classList.contains('d-none')) {
+             walletMessageP.textContent = "Wallet connection prompt is already open. Please check your wallet extension.";
+        } else if (walletInfoDisconnected && !walletInfoDisconnected.classList.contains('d-none')) {
+             const tooltipTextElement = document.getElementById('wallet-tooltip-text');
+             if (tooltipTextElement) {
+                 tooltipTextElement.textContent = "Wallet connection prompt is already open. Please check your wallet extension.";
+             }
+        }
         return false;
     }
-    if (typeof window.ethereum === "undefined") {
-        walletMessageP.textContent = "MetaMask or an Ethereum wallet is required.";
-        connectButtonMain?.classList.remove('hidden');
-        connectButtonMain.disabled = true;
-        return false;
-    }
+
+    isConnectingWallet = true;
+    connectButtonMain?.classList.remove('d-none');
+    connectButtonMain?.classList.remove('hidden'); // Fallback
 
     try {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        provider = new window.ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        console.log("Wallet connected:", await signer.getAddress());
-
-        if (!CONTRACT_ADDRESS || !isValidEthereumAddress(CONTRACT_ADDRESS)) {
-             console.error("Contract address not configured correctly or is invalid:", CONTRACT_ADDRESS);
-             walletMessageP.textContent = "Error: Contract address is missing or invalid.";
-             return false;
+        // --- Check if ABI is loaded ---
+        if (!WHISPER_NFT_ABI) {
+            console.error("ABI not loaded.");
+            walletMessageP.textContent = "Error: Application failed to load contract data (ABI). Please refresh the page.";
+            return false;
         }
 
-        whisperNFTContract = new window.ethers.Contract(CONTRACT_ADDRESS, WHISPER_NFT_ABI, signer);
-        console.log("DEBUG: Contract Instance:", whisperNFTContract);
-console.log("DEBUG: Contract Address Used:", CONTRACT_ADDRESS);
-console.log("DEBUG: ABI Snippet (totalSupply):", WHISPER_NFT_ABI?.find(item => item.name === "totalSupply"));
+        if (typeof window.ethereum === "undefined") {
+            walletMessageP.textContent = "MetaMask or an Ethereum wallet is required.";
+            connectButtonMain.disabled = true;
+            return false;
+        }
 
+        console.log("Requesting accounts from wallet...");
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        provider = new window.ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        console.log("Wallet connected:", signerAddress);
+
+        if (!CONTRACT_ADDRESS || !isValidEthereumAddress(CONTRACT_ADDRESS)) {
+            console.error("Contract address not configured correctly or is invalid:", CONTRACT_ADDRESS);
+            walletMessageP.textContent = "Error: Contract address is missing or invalid. Please check the application configuration.";
+            return false; 
+        }
+
+        console.log("DEBUG: Contract Address Used:", CONTRACT_ADDRESS);
+        console.log("DEBUG: ABI Snippet (totalSupply):", WHISPER_NFT_ABI?.find(item => item.name === "totalSupply"));
+
+        whisperNFTContract = new window.ethers.Contract(CONTRACT_ADDRESS, WHISPER_NFT_ABI, signer);
+        console.log("WhisperNFT contract instance created at:", CONTRACT_ADDRESS);
         await updateUIConnected();
         loadWhisperFeed();
         return true;
+
     } catch (error) {
         console.error("Error connecting wallet:", error);
-        walletMessageP.textContent = "Error connecting wallet.";
+
+        let userFriendlyMessage = "Error connecting wallet. Please try again."; // Default message
+
+        if (error.code === 'USER_REJECTED_REQUEST') { // EIP-1193 code
+            userFriendlyMessage = "Wallet connection was rejected by the user.";
+        } else if (error.code === -32002) { // Specific RPC Error Code for concurrent requests
+            userFriendlyMessage = "Wallet connection prompt is already open. Please check your wallet extension and complete the request there.";
+            console.log("MetaMask connection request is already pending. User needs to check their wallet.");
+        } else if (error.code === 'CALL_EXCEPTION' || error.code === 'BAD_DATA') {
+             userFriendlyMessage = "Connected to wallet, but failed to interact with the smart contract. Please check the network and contract address.";
+        } else if (error.message) {
+            if (error.message.includes("network") || error.message.includes("chain")) {
+                userFriendlyMessage = "Connected to wallet, but it's on the wrong network. Please switch to the correct network (e.g., Morph Testnet).";
+            } else if (error.message.includes("disconnected") || error.message.includes("lost connection")) {
+                 userFriendlyMessage = "Lost connection to the wallet. Please check your wallet and try again.";
+            }
+        }
+        walletMessageP.textContent = userFriendlyMessage;
+        console.error("Specific error details:", error); 
+        connectButtonMain?.classList.remove('d-none');
         connectButtonMain?.classList.remove('hidden');
-        return false;
+        
+        if (typeof window.ethereum !== "undefined") {
+            connectButtonMain.disabled = false;
+        }
+
+        return false; // Indicate connection failure
+
+    } finally {
+        // --- Crucially, reset the connection flag in the finally block ---
+        // This ensures the flag is always reset, even if the function returns early
+        // or throws an error in the catch block.
+        console.log("Wallet connection attempt finished (success or error).");
+        isConnectingWallet = false;
     }
 }
 
 async function mintWhisperNFT(scrambledText, durationSeconds) {
+    console.log("mintWhisperNFT called with:", { scrambledText, durationSeconds });
+
     if (!whisperNFTContract || !signer) {
         throw new Error("Wallet not connected.");
     }
@@ -307,12 +392,10 @@ async function mintWhisperNFT(scrambledText, durationSeconds) {
 
     try {
         console.log("Minting Whisper NFT...");
-        submitErrorDiv.classList.add('hidden');
 
         const tx = await whisperNFTContract.mintWhisper(scrambledText, durationSeconds);
         console.log("Transaction sent:", tx.hash);
 
-        // Show minting spinner/status on button itself handled by event listener
 
         const receipt = await tx.wait();
         console.log("Transaction confirmed:", receipt);
@@ -416,94 +499,136 @@ async function fetchRecentWhispers(limit = 10) {
 async function updateUIConnected() {
     try {
         const address = await signer.getAddress();
+        console.log("Wallet connected, updating UI for address:", address);
+
         walletIconDisconnected.classList.add('d-none');
         walletIconConnected.classList.remove('d-none');
-        walletConnectedAddress.textContent = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-        walletInfoConnected.classList.remove('d-none');
-        walletInfoDisconnected.classList.add('d-none');
-        walletMessageP.textContent = ""; 
+        const displayAddress = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        console.log("Obfuscated address to display:", displayAddress);
+        if (walletConnectedAddress) {
+            walletConnectedAddress.textContent = displayAddress;
+            walletConnectedAddress.title = address;
+        } else {
+            console.error("walletConnectedAddress element not found!");
+        }
+        if (walletInfoConnected) {
+            walletInfoConnected.classList.remove('d-none'); 
+        } else {
+            console.error("walletInfoConnected element not found!");
+        }
 
-        scrambleSpinner?.classList.add('d-none');
-        mintSpinner?.classList.add('d-none');
+        if (walletMessageP) {
+            walletMessageP.textContent = "";
+        }
 
-        walletStatusDiv.classList.add('d-none');
-        submitSection.classList.remove('hidden'); 
-        submitSection.classList.remove('d-none');
+        if (walletStatusDiv) {
+            walletStatusDiv.classList.add('d-none');
+        }
 
-        // --- Load ephemeral prompts ---
-        const NUMBER_OF_PROMPTS_TO_SHOW = 4;
+        if (submitSection) {
+           submitSection.classList.remove('d-none');
+        }
+
+        const scrambleSpinner = document.getElementById('scramble-spinner');
+        const mintSpinner = document.getElementById('mint-spinner');
+        if (scrambleSpinner) scrambleSpinner.classList.add('d-none');
+        if (mintSpinner) mintSpinner.classList.add('d-none');
+
+        const promptsContainer = document.getElementById('ephemeral-prompts-container');
+        const promptsDiv = document.getElementById('ephemeral-prompts');
         if (promptsContainer && promptsDiv) {
             promptsDiv.innerHTML = '';
-            
+
+            const NUMBER_OF_PROMPTS_TO_SHOW = 4;
             const randomPrompts = getRandomPrompts(EPHEMERAL_THOUGHT_PROMPTS, NUMBER_OF_PROMPTS_TO_SHOW);
 
             randomPrompts.forEach(promptText => {
                 const button = document.createElement('button');
                 button.type = 'button';
-                
-                button.className = 'prompt-button'; 
+                button.className = 'btn btn-outline-secondary btn-sm me-2 mb-2';
                 button.textContent = promptText;
                 button.title = "Click to use this prompt";
                 button.addEventListener('click', () => {
-                    rawWhisperTextarea.value = promptText;
-                    rawWhisperTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    const rawWhisperTextarea = document.getElementById('raw-whisper');
+                    if (rawWhisperTextarea) {
+                        rawWhisperTextarea.value = promptText;
+                        rawWhisperTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
                 });
                 promptsDiv.appendChild(button);
             });
+
             promptsContainer.classList.remove('d-none');
-            promptsContainer.classList.remove('hidden');
         }
         // --- End prompts ---
 
     } catch (err) {
-        console.error("Error getting signer address:", err);
-        walletConnectedAddress.textContent = "Connected (Error)";
-        walletInfoConnected.classList.remove('d-none');
-        walletInfoDisconnected.classList.add('d-none');
+        console.error("Error getting signer address or updating UI:", err);
+        if (walletConnectedAddress) {
+            walletConnectedAddress.textContent = "Connected (Error)";
+        }
+        if (walletInfoConnected) {
+            walletInfoConnected.classList.remove('d-none');
+        }
     }
-    connectButtonMain?.classList.add('d-none');
-    connectButtonMain?.classList.add('hidden');
+    
+    if (connectButtonMain) {
+        connectButtonMain.classList.add('d-none');
+    }
 }
 
 function updateUIDisconnected() {
-    const alertDivInsideWalletMessage = walletMessageP.querySelector('.alert');
-    if (alertDivInsideWalletMessage) {
-        alertDivInsideWalletMessage.innerHTML = `
-            <h5 class="alert-heading">Welcome to MorphEcho!</h5>
-            <p>Connect your wallet to share ephemeral, AI-scrambled whispers with your community.</p>
-            <hr>
-            <p class="mb-0"><small>Your whispers are temporary NFTs that expire and disappear.</small></p>
-        `;
-    } else {
-        // Fallback if structure changes
-        walletMessageP.innerHTML = `
-            <div class="alert alert-info mb-3">
+    console.log("Updating UI to disconnected state.");
+    if (walletIconDisconnected) walletIconDisconnected.classList.remove('d-none'); 
+    if (walletIconConnected) walletIconConnected.classList.add('d-none');
+    if (walletInfoConnected) walletInfoConnected.classList.add('d-none'); 
+    if (walletMessageP && walletStatusDiv) {
+        const alertDivInsideWalletMessage = walletMessageP.querySelector('.alert');
+        if (alertDivInsideWalletMessage) {
+            alertDivInsideWalletMessage.innerHTML = `
                 <h5 class="alert-heading">Welcome to MorphEcho!</h5>
                 <p>Connect your wallet to share ephemeral, AI-scrambled whispers with your community.</p>
                 <hr>
                 <p class="mb-0"><small>Your whispers are temporary NFTs that expire and disappear.</small></p>
-            </div>
-        `;
+            `;
+        } else {
+            walletMessageP.innerHTML = `
+                <div class="alert alert-info mb-3">
+                    <h5 class="alert-heading">Welcome to MorphEcho!</h5>
+                    <p>Connect your wallet to share ephemeral, AI-scrambled whispers with your community.</p>
+                    <hr>
+                    <p class="mb-0"><small>Your whispers are temporary NFTs that expire and disappear.</small></p>
+                </div>
+            `;
+        }
+        walletStatusDiv.classList.remove('d-none');
     }
 
-    connectButtonMain?.classList.remove('d-none');
-    connectButtonMain.disabled = false;
+    if (connectButtonMain) {
+        connectButtonMain.classList.remove('d-none');
+        connectButtonMain.disabled = false;
+    }
 
-    walletStatusDiv.classList.remove('d-none');
-    submitSection.classList.add('d-none');
 
+    if (submitSection) {
+        submitSection.classList.add('d-none');
+    }
     clearSubmitForm();
-
-    loadWhisperFeed(); 
-    
+    walletTooltip?.classList.add('hidden');
+    walletDropdownMenu?.classList.add('d-none'); 
+    loadWhisperFeed();
+    const promptsContainer = document.getElementById('ephemeral-prompts-container');
     if (promptsContainer) {
         promptsContainer.classList.add('d-none');
     }
-
-    walletIconDisconnected.classList.remove('d-none');
-    walletIconConnected.classList.add('d-none');
-    walletInfoConnected.classList.add('d-none');
-    walletInfoDisconnected.classList.remove('d-none');
+    if (walletConnectedAddress) {
+        walletConnectedAddress.textContent = "";
+    }
+    noWhispersMessage.textContent = "No whispers found. Connect your wallet and be the first to share one!";
+    noWhispersMessage.classList.remove('d-none');
+    
+    connectButtonMain?.classList.remove('d-none');
+    connectButtonMain?.classList.remove('hidden');
 }
 
 function clearSubmitForm() {
@@ -535,10 +660,19 @@ function showLoadingSpinner(isLoading) {
 }
 
 function showError(targetDiv, message) {
+    console.log("DEBUG showError called:", { targetDiv, message }); // Add this line
+    if (!targetDiv) {
+        console.error("DEBUG showError: targetDiv is null!"); // Add this check
+        return; // Exit if targetDiv is null to prevent errors
+    }
     const plainText = message.replace(/<[^>]*>?/gm, '');
+    console.log("DEBUG showError: Setting textContent to:", plainText); // Add this line
     targetDiv.textContent = plainText;
+    console.log("DEBUG showError: Removing d-none, adding alert classes"); // Add this line
     targetDiv.classList.remove('d-none');
+    // targetDiv.classList.remove('hidden'); // If needed for Tailwind compat
     targetDiv.classList.add('alert', 'alert-danger');
+    console.log("DEBUG showError: Finished."); // Add this line
 }
 
 function hideError(targetDiv) {
@@ -743,10 +877,32 @@ function renderWhisperFeed(whispers) {
     });
 }
 
+function generateCrypticPattern(text) {
+    // Example: Generate a simple SVG pattern based on text hash
+    const hash = hashCode(text); // Replace with your hashing function
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect width="100%" height="100%" fill="#${hash}"/> <!-- Use hash as color -->
+            <path d="M0 0 L50 100 L100 0 Z" stroke="#fff" stroke-width="2" fill-opacity="0.5"/>
+        </svg>
+    `;
+    return btoa(svg); // Convert SVG to base64
+}
+
+// Simple hash function (replace with a better one if needed)
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash.toString(16).padStart(6, '0'); // Convert to hex and pad to 6 digits
+}
+
 // --- Event Listeners ---
 
 // Wallet Button Click and Tooltip
-walletButton?.addEventListener('click', (event) => {
+walletButton?.addEventListener('click', async (event) => {
+    event.preventDefault();
     event.stopPropagation();
     walletTooltip?.classList.toggle('hidden');
     if (!walletTooltip?.classList.contains('hidden')) {
@@ -759,6 +915,13 @@ walletButton?.addEventListener('click', (event) => {
         setTimeout(() => {
             document.addEventListener('click', closeTooltip);
         }, 10);
+    }
+    if (!whisperNFTContract || !signer) {
+        // If disconnected, trigger the wallet connection flow
+        console.log("Wallet icon clicked, initiating connection...");
+        await initWallet();
+    } else {
+        console.log("Wallet already connected, icon click might be for menu.");
     }
 });
 
@@ -780,9 +943,7 @@ async function disconnectWallet() {
     signer = null;
     whisperNFTContract = null;
     updateUIDisconnected();
-    whisperFeedDiv.innerHTML = '';
-    noWhispersMessage.textContent = "No whispers found. Connect your wallet and be the first to share one!";
-    noWhispersMessage.classList.remove('hidden');
+
     hideError(feedErrorDiv);
     console.log("Wallet disconnected in UI.");
 }
@@ -802,7 +963,6 @@ scrambleButton?.addEventListener('click', async () => {
     const rawText = rawWhisperTextarea.value.trim();
     if (!rawText) return;
 
-    // Rate Limiting Check (UI Level)
     const now = Date.now();
     if (now - lastMintAttemptTime < MINT_ATTEMPT_COOLDOWN_MS) {
         const remainingTime = Math.ceil((MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime)) / 1000);
@@ -821,138 +981,157 @@ scrambleButton?.addEventListener('click', async () => {
     }
 
     try {
-        // Update last attempt time on initiating scramble (success path)
+
         lastMintAttemptTime = Date.now();
 
-        // --- Show Original Input ---
         originalTextPreviewP.textContent = rawText;
         originalPreviewDiv.classList.remove('d-none'); 
 
-        // Show spinner, disable button
         scrambleSpinner?.classList.remove('d-none'); 
         scrambleSpinnerText.textContent = "Scrambling...";
-        scrambleButton.disabled = true; // Disable while processing
-        hideError(submitErrorDiv); // Use existing function (handles 'd-none')
+        scrambleButton.disabled = true;
+        hideError(submitErrorDiv); 
 
         const scrambled = await scrambleWhisperViaProxy(rawText);
-
-        // --- Show Scrambled Output & Re-scramble Button ---
         scrambledTextP.textContent = scrambled;
         scramblePreviewDiv?.classList.remove('d-none'); 
-        reScrambleButton?.classList.remove('d-none'); // Show Re-scramble button
+        reScrambleButton?.classList.remove('d-none');
 
         durationSelectorDiv?.classList.remove('d-none'); 
         mintButton?.classList.remove('d-none'); 
     } catch (err) {
         console.error("Scrambling error:", err);
-        showError(submitErrorDiv, err.message || "Failed to scramble whisper."); // Use existing function
+        showError(submitErrorDiv, err.message || "Failed to scramble whisper."); 
         // Hide elements on error
         originalPreviewDiv?.classList.add('d-none'); 
         scramblePreviewDiv?.classList.add('d-none'); 
-        reScrambleButton?.classList.add('d-none'); // Hide Re-scramble button
+        reScrambleButton?.classList.add('d-none');
         durationSelectorDiv?.classList.add('d-none'); 
         mintButton?.classList.add('d-none'); 
-        // Do not update lastMintAttemptTime on error, allow retry sooner?
     } finally {
-        // Crucial: Always hide spinner and reset button text using Bootstrap class
         scrambleSpinner?.classList.add('d-none'); 
         scrambleSpinnerText.textContent = "Scramble with AI";
-        // scrambleButton.disabled is managed by input event listener
     }
 });
 
-// --- Add Re-scramble Button Event Listener ---
 reScrambleButton?.addEventListener('click', async () => {
-    // Re-use the logic from scrambleButton, but get raw text from the preview/original input
-    const rawText = originalTextPreviewP.textContent.trim(); // Get original text
-    if (!rawText) {
-        // This shouldn't happen if the button is only visible after a successful initial scramble
-        console.warn("Re-scramble button clicked but no original text found.");
+    console.log("Re-scramble button clicked!"); 
+
+    if (!originalTextPreviewP) {
+        console.error("originalTextPreviewP element not found!");
+        showError(submitErrorDiv, "Application error: Original text preview not found.");
+        return;
+    }
+    if (!scrambleSpinner || !scrambleSpinnerText || !scrambledTextP) {
+        console.error("One or more UI elements for scrambling not found!");
+        showError(submitErrorDiv, "Application error: UI elements missing.");
         return;
     }
 
-    // Basic rate limiting check (could be separate from initial scramble if desired)
+    const rawText = originalTextPreviewP.textContent.trim(); 
+    console.log("Raw text for re-scrambling (after trim):", rawText);
+
+    if (!rawText) {
+        console.warn("Re-scramble button clicked but no original text found.");
+        showError(submitErrorDiv, "Error: Original whisper text not found for re-scrambling.");
+        return;
+    }
+
     const now = Date.now();
-    if (now - lastMintAttemptTime < MINT_ATTEMPT_COOLDOWN_MS) {
-        const remainingTime = Math.ceil((MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime)) / 1000);
+    if (now - lastReScrambleAttemptTime < RE_SCRAMBLE_COOLDOWN_MS) {
+        const remainingTime = Math.ceil((RE_SCRAMBLE_COOLDOWN_MS - (now - lastReScrambleAttemptTime)) / 1000);
+        console.log(`Re-scramble rate limit hit. Remaining time: ${remainingTime} seconds.`);
         showError(submitErrorDiv, `Please wait ${remainingTime} second(s) before trying again.`);
         return;
     }
 
     try {
-        // Update last attempt time
-        lastMintAttemptTime = Date.now();
+        console.log("Starting re-scramble process...");
+        lastReScrambleAttemptTime = Date.now();
 
-        // Show spinner on main scramble button (or could have a separate one for re-scramble)
         scrambleSpinner?.classList.remove('d-none'); 
         scrambleSpinnerText.textContent = "Re-scrambling...";
-        reScrambleButton.disabled = true; // Disable re-scramble while processing
-        hideError(submitErrorDiv); // Use existing function
+        reScrambleButton.disabled = true; 
+        hideError(submitErrorDiv);
 
         const scrambled = await scrambleWhisperViaProxy(rawText);
 
         // Update the scrambled text display
         scrambledTextP.textContent = scrambled;
-        // Ensure preview and mint button are visible (they should be already)
-        // No need to change their visibility here as they are already shown after initial scramble
 
     } catch (err) {
         console.error("Re-scrambling error:", err);
         showError(submitErrorDiv, err.message || "Failed to re-scramble whisper.");
-        // Potentially hide elements or show specific error for re-scramble?
-        // For now, rely on general error handling
     } finally {
-        // Hide spinner, reset text, re-enable button
+        console.log("Re-scramble process finished (success or error). Hiding spinner...");
         scrambleSpinner?.classList.add('d-none'); 
-        scrambleSpinnerText.textContent = "Scramble with AI"; // Reset to original text or specific one?
-        reScrambleButton.disabled = false; // Re-enable re-scramble button
+        scrambleSpinnerText.textContent = "Scramble with AI";
+        reScrambleButton.disabled = false;
     }
 });
 
 // Mint Button
-mintButton?.addEventListener('click', async () => {
+mintButton.addEventListener('click', async () => {
+    console.log("LOG A: Mint button clicked!");
+
     const scrambledText = scrambledTextP.textContent;
     const duration = parseInt(durationSelect.value, 10);
-
-    // Rate Limiting Check (UI Level - redundant but user-friendly)
+    console.log("LOG A1: Scrambled Text:", scrambledText);
+    console.log("LOG A2: Duration Selected:", duration);
     const now = Date.now();
+    console.log("LOG A3: Current Time:", now, "Last Mint Attempt Time:", lastMintAttemptTime);
     if (now - lastMintAttemptTime < MINT_ATTEMPT_COOLDOWN_MS) {
+        console.log("LOG A4: Mint attempt cooldown active. Remaining time:", MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime));
         const remainingTime = Math.ceil((MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime)) / 1000);
         showError(submitErrorDiv, `Please wait ${remainingTime} second(s) before trying again.`);
+        console.log("LOG A5: Mint attempt cooldown error shown.");
+        return;
+    }
+    console.log("LOG A6: Passed initial cooldown check. Proceeding with minting...");
+    if (!scrambledText) {
+        console.warn("LOG A7: No scrambled text available for minting.");
+        showError(submitErrorDiv, "No scrambled text available.");
+        //console.log("LOG A8: Minting aborted due to missing scrambled text.");
         return;
     }
 
-    if (!scrambledText) {
-        showError(submitErrorDiv, "No scrambled text available.");
-        return;
-    }
+    //console.log("LOG B: Passed initial checks. About to enter MAIN try block.");
+    //console.log("LOG C: Values - scrambledText length:", scrambledText?.length, "duration:", duration);
+    //console.log("Passed initial checks, about to enter try block. scrambledText length:", scrambledText.length, "duration:", duration);
 
     try {
-        // Update last attempt time on initiating mint (success path)
+        console.log("LOG D: Inside MAIN try block. First line executed.");
         lastMintAttemptTime = Date.now();
 
-        // --- Show mint spinner using Bootstrap class ---
+        console.log("Showing mint spinner...");
         mintSpinner?.classList.remove('d-none');
-        mintSpinner?.classList.remove('hidden'); // Fallback
         mintSpinnerText.textContent = "Minting...";
-        mintButton.disabled = true; // Disable while processing
+        mintButton.disabled = true;
+        console.log("Spinner shown, button disabled.");
 
+        console.log("Calling mintWhisperNFT with:", { scrambledText, duration });
+
+        console.log("LOG E: Calling mintWhisperNFT...");
         const result = await mintWhisperNFT(scrambledText, duration);
-        console.log("Minting successful:", result);
+        console.log("LOG F: Minting successful, result received:", result);
+
         alert(`Whisper minted successfully!\nTx Hash: ${result.txHash}\nToken ID: ${result.tokenId || 'N/A'}`);
 
-        clearSubmitForm(); // This now correctly resets spinners using 'd-none'
+        clearSubmitForm();
         loadWhisperFeed();
     } catch (err) {
-        console.error("Minting error:", err);
-        showError(submitErrorDiv, err.message || "Failed to mint whisper NFT."); // Use existing function
-        // Do not update lastMintAttemptTime on error, allow retry sooner?
+
+        console.log("LOG G: Inside MAIN catch block. Error caught.");
+        console.error("Minting error (caught in event listener):", err);
+        showError(submitErrorDiv, err.message || "Failed to mint whisper NFT.");
     } finally {
-        // --- Crucial: Always hide spinner and reset button text/state using Bootstrap class ---
+
+        console.log("LOG H: Inside MAIN finally block. Cleaning up.");
         mintSpinner?.classList.add('d-none');
-        mintSpinner?.classList.add('hidden'); // Fallback
         mintSpinnerText.textContent = "Mint Whisper NFT";
-        mintButton.disabled = false; // Re-enable button after action (success or error)
+        mintButton.disabled = false;
+        console.log("Spinner hidden, button re-enabled.");
+        console.log("LOG I: MAIN finally block finished.");
     }
 });
 

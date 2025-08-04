@@ -273,55 +273,54 @@ button {
 }
 
 #ephemeral-prompts-container {
-    margin-bottom: 0.75rem; /* mb-3 */
+    margin-bottom: 0.75rem;
 }
 
 #ephemeral-prompts {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem; /* 8px */
+    gap: 0.5rem;
 }
 
-.prompt-button { /* Reusing the class name */
-    padding: 0.25rem 0.5rem; /* 4px 8px */
-    font-size: 0.75rem; /* text-xs */
-    background-color: #f9fafb; /* gray-50 or similar light */
-    color: #4b5563; /* gray-600 */
-    border: 1px solid #e5e7eb; /* gray-200 */
-    border-radius: 0.25rem; /* rounded */
+.prompt-button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    background-color: #f9fafb;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
-    /* Prevent button from stretching */
     flex-shrink: 0;
 }
 
 .prompt-button:hover {
-    background-color: #f3f4f6; /* gray-100 */
-    border-color: #d1d5db; /* gray-300 */
+    background-color: #f3f4f6;
+    border-color: #d1d5db; 
 }
 
 .prompt-button:focus {
     outline: none;
-    border-color: #3b82f6; /* blue-500 */
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* blue-500 focus ring */
+    border-color: #3b82f6; 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 #loading-spinner {
-    display: none; /* Hidden by default */
+    display: none;
 }
 
 #disconnect-button {
     width: 100%;
     text-align: left;
-    padding: 0.5rem 1rem; /* 8px 16px */
-    color: #4b5563; /* gray-600 */
+    padding: 0.5rem 1rem; 
+    color: #4b5563;
     background-color: transparent;
     border: none;
     cursor: pointer;
 }
 
 #disconnect-button:hover {
-    background-color: #f9fafb; /* gray-50 or similar light hover */
+    background-color: #f9fafb;
 }
 
 .fixed-bottom {
@@ -329,19 +328,30 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-    width: 100%; /* Ensure it spans full width */
-    z-index: 100; /* High z-index to stay on top of other content if needed */
-    /* Optional: Add a subtle shadow or border-top for visual separation */
-    /* box-shadow: 0 -2px 4px rgba(0,0,0,0.05); */ 
-    /* border-top: 1px solid #e5e7eb; */ /* gray-200 equivalent */
+    width: 100%;
+    z-index: 100;
 }
 
 #app-footer footer {
     width: 100%;
-    /* Apply background and padding directly to the footer if not using utility classes */
-    /* background-color: #fff; */ /* bg-white equivalent */
-    /* padding-top: 0.75rem; padding-bottom: 0.75rem; */ /* py-3 equivalent */
-    /* font-size: 0.75rem; */ /* text-xs equivalent */
-    /* color: #6b7280; */ /* text-gray-500 equivalent */
-    /* margin: 0; */ /* Reset default margins */
+}
+
+#logo {
+    max-height: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); 
+}
+
+#submit-error {
+    margin-top: 2rem;
+    padding: 0.5rem;
+    background-color: #fff4f6;
+    border: 1px solid #ebedef;
+    color: #e74c3c;
+    border-radius: 0.25rem;
+}
+
+.alert-danger {
+    color: #e74c3c !important;
+    background-color: #f8d7da !important;
+    border-color: #cfe2ff !important;
 }

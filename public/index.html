@@ -8,30 +8,39 @@
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-  <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 font-sans">
-    <div id="wallet-widget" class="absolute top-4 right-4 z-10">
-        <button id="wallet-button" class="p-2 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-haspopup="true" aria-expanded="false">
-            <span id="wallet-icon-disconnected">👤</span>
-            <span id="wallet-icon-connected" class="hidden">🔐</span>
+    <div id="wallet-widget" class="position-fixed top-3 end-3 z-3">
+        <button id="wallet-button" class="btn btn-sm btn-outline-secondary rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span id="wallet-icon-disconnected" class="">👤</span>
+            <span id="wallet-icon-connected" class="d-none">
+                <i class="bi bi-wallet2"></i>
+            </span>
         </button>
 
-        <div id="wallet-tooltip" class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 hidden z-20 text-xs">
-            <div id="wallet-info-connected" class="hidden">
-                <span id="wallet-connected-address" class="block px-4 py-2 text-gray-700 font-medium"></span>
-                <button id="disconnect-button" class="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100">Disconnect</button>
-            </div>
-            <div id="wallet-info-disconnected">
-                <span id="wallet-tooltip-text" class="block px-4 py-2 text-gray-700">Connect Wallet</span>
-            </div>
-        </div>
+        <!-- Wallet Dropdown Menu -->
+        <ul id="wallet-dropdown-menu" class="dropdown-menu dropdown-menu-end mt-1 shadow">
+            <li id="wallet-info-connected" class="d-none">
+                <h6 class="dropdown-header">Connected Wallet</h6>
+                <span id="wallet-connected-address" class="dropdown-item-text px-3 py-1 text-break small"></span>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button id="disconnect-button" class="dropdown-item btn btn-sm btn-outline-danger mx-2" type="button">
+                        <i class="bi bi-box-arrow-right me-1"></i> Disconnect
+                    </button>
+                </li>
+            </li>
+        </ul>
     </div>
-
+        
     <div id="app" class="container mx-auto p-4 max-w-md relative">
         <header class="text-center my-6">
+            <a href="/" class="flex items-center text-gray-900 font-bold text-xl">
+                <img src="/android-chrome-192x192.png" alt="MorphEcho Logo" class="h-8 mr-2" style="margin: 0 auto;">
+            </a>
             <h1 class="text-2xl font-bold text-gray-900">MorphEcho</h1>
-            <p class="text-gray-600 text-sm">Share ephemeral, AI-scrambled whispers.</p>
+            <p class="text-gray-600 text-sm">Share ephemeral, AI-scrambled whispers 🤫.</p>
         </header>
 
         <main>
@@ -50,21 +59,20 @@
                 </div>
             </div>
 
-            <!-- Submit Form (shown when connected) -->
-            <div id="submit-section" class="hidden mb-8 p-4 bg-white rounded-lg shadow-md">
-                <h2 class="text-xl font-bold mb-3 text-gray-800">Share a Whisper</h2>
+            <div id="submit-section" class="d-none mb-8 p-4 bg-white rounded-lg shadow-md"> <!-- Use d-none -->
+                <h2 class="text-xl font-bold mb-3 text-gray-800">Share a Whisper 🤫</h2>
                 <div id="original-preview" class="mb-3 p-2 bg-light rounded border d-none"> 
                     <p class="text-xs fw-medium text-muted mb-1">Your Original Whisper:</p> 
                     <p id="original-text-preview" class="text-sm text-body mb-0"></p> 
                 </div>
                 <div class="mb-3">
-                    <label for="raw-whisper" class="block text-sm font-medium text-gray-700 mb-1">Your Thought (Will be scrambled by AI)</label>
-                    <textarea id="raw-whisper" placeholder="Type your ephemeral thought here..." rows="3" class="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <label for="raw-whisper" class="form-label fw-medium text-body-secondary mb-1">Your Thought (Will be scrambled by AI)</label>
+                    <textarea id="raw-whisper" placeholder="Type your ephemeral thought here..." rows="3" class="form-control"></textarea>
                 </div>
 
-                <div id="ephemeral-prompts-container" class="mb-3 hidden">
-                    <p class="text-xs text-gray-500 mb-1">Need inspiration?</p>
-                    <div id="ephemeral-prompts" class="flex flex-wrap gap-2">
+                <div id="ephemeral-prompts-container" class="mb-3 d-none"> <!-- Use d-none -->
+                    <p class="text-xs text-muted mb-1">Need inspiration?</p>
+                    <div id="ephemeral-prompts" class="d-flex flex-wrap gap-2">
                     </div>
                 </div>
 
@@ -84,7 +92,6 @@
                     <p id="scrambled-text" class="text-body fst-italic mb-0"></p>
                 </div>
                 
-                <!-- Duration Selector -->
                 <div id="duration-selector" class="d-none mt-3">
                     <label for="duration" class="form-label fw-medium text-body-secondary mb-1">Duration</label>
                     <select id="duration" class="form-select">
@@ -100,12 +107,12 @@
                     <span id="mint-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     <span id="mint-spinner-text" class="ms-2">Mint Whisper NFT</span> 
                 </button>
-                <div id="submit-error" class="hidden mt-2 p-2 text-red-700 bg-red-100 rounded text-sm"></div>
+                <div id="submit-error" class="alert alert-danger d-none mt-2" role="alert"></div> <!-- Use BS classes -->
             </div>
 
             <!-- Whisper Feed -->
             <div id="feed-section">
-                <h2 class="h4 mb-3 fw-bold text-dark">Whisper Feed</h2>
+                <h2 class="h4 mt-3 mb-3 fw-bold text-dark">Whisper Feed</h2>
 
                 <div id="loading-spinner" class="d-none text-center my-4">
                     <div class="spinner-border text-primary" role="status">
@@ -119,8 +126,8 @@
                 <!-- Whisper Feed Container -->
                 <div id="whisper-feed" class="row g-3">
                     <div id="no-whispers-message" class="col-12">
-                        <div class="alert alert-danger text-center mb-0" role="alert">
-                            Connect your wallet to discover ephemeral whispers shared nearby.
+                        <div class="alert alert-info text-center mb-0" role="alert">
+                             Connect your wallet to discover ephemeral whispers shared nearby.
                         </div>
                     </div>
                 </div>
@@ -141,6 +148,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" integrity="sha384-7qAoOXltbVP82dhxHAUje59V5r2YsVfBafyUDxEdApLPmcdhBPg1DKg1ERo0BZlK" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js" integrity="sha512-UXYETj+vXKSURF1UlgVRLzWRS9ZiQTv3lcL4rbeLyqTXCPNZC6PTLF/Ik3uxm2Zo+E109cUpJPZfLxJsCgKSng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

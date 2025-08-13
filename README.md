@@ -1,4 +1,6 @@
-<img width="1024" height="1024" alt="logo" src="https://github.com/user-attachments/assets/dd980663-7039-4198-9359-aaf49a78ceab" />
+
+<img width="192" height="192" alt="android-chrome-192x192" src="https://github.com/user-attachments/assets/31d34cc2-8c3d-4010-85ad-407d3c5fa6fe" />
+
 # MorphEcho - Decentralized Whispers
 
 MorphEcho is a decentralized social platform that allows users to share ephemeral, AI-scrambled whispers as temporary NFTs on the Morph L2 blockchain. Experience anonymous, privacy-preserving communication where your thoughts are transformed by locally running AI through a Gaia node and automatically expire.

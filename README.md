@@ -1,21 +1,152 @@
+# MorphEcho - Decentralized Whispers
 
-### **MorphEcho: Decentralized, AI-Scrambled Anonymous Whispers**
+MorphEcho is a decentralized social platform that allows users to share ephemeral, AI-scrambled whispers as temporary NFTs on the Morph L2 blockchain. Experience anonymous, privacy-preserving communication where your thoughts are transformed by AI and automatically expire.
 
-**Share ephemeral thoughts. Anonymously. Creatively. Onchain.**
+## ✨ Features
 
-MorphEcho is a decentralized application (dApp) that allows users to share temporary, anonymous messages ("whispers") on the Morph blockchain. These whispers are first transformed by an AI to scramble the original input, adding a layer of anonymity and creative expression, before being minted as unique, short-lived Non-Fungible Tokens (NFTs). After a user-defined time (e.g., 24 hours), the whisper NFT expires and its content is "forgotten".
+- 🤫 **Ephemeral Whispers**: Share temporary thoughts that expire and disappear forever
+- 🤖 **AI-Powered Privacy**: Your thoughts are intelligently scrambled by AI while preserving emotional essence
+- 💝 **Community Engagement**: Heart whispers you find meaningful and build connections
+- 🚩 **Self-Moderation**: Community-driven reporting system to maintain a respectful environment
+- 📊 **Live Analytics**: Real-time statistics showing AI usage and community growth
+- 🔗 **Blockchain Native**: Built on Morph L2 with smart contract integration for true decentralization
+- 🎭 **Anonymous Expression**: Share freely without revealing your identity
 
-#### **Why is it Useful?**
+## 🚀 Live Demo
 
--   **Anonymous Expression:** Provides a safe space for users to share personal thoughts, feelings, or observations without revealing their identity. The AI scrambling step obfuscates the original message.
--   **Ephemerality:** Unlike permanent social media posts, whispers are designed to be temporary, reflecting the fleeting nature of a whispered secret. This can encourage more honest, in-the-moment sharing.
--   **Creative Twist:** The AI doesn't just hide the message; it transforms it into something potentially poetic, cryptic, or thematic, adding an element of surprise and artistic reinterpretation.
--   **Local/Community Pulse (Planned):** Future iterations aim to let users discover whispers based on location (using geohash) or shared interests, creating a sense of a temporary, local "community vibe" or pulse of anonymous sentiment.
+Visit the live application: [Your Deployment URL]
 
-#### **Key Features Demonstrated**
+**Network**: Morph Testnet  
+**Contract**: `0x561C97731839A1C65070B424283A7cb3d41027Da`
 
-1.  **AI Integration:** Showcases the use of an external AI service (Gaia) to process user input before onchain interaction, creating a unique user experience.
-2.  **Temporary NFTs on Morph:** Leverages Morph's fast and low-cost transactions to mint text-based NFTs that represent these ephemeral whispers.
-3.  **Smart Contract Expiry Logic:** The underlying smart contract (`WhisperNFT.sol`) enforces the temporary nature by having an expiry time and a mechanism to "forget" the content.
-4.  **Wallet Integration:** Demonstrates standard web3 wallet connectivity (MetaMask etc.) for user authentication and transaction signing on Morph.
-5.  **Morph's Strengths:** Highlights Morph's suitability for high-frequency, low-value, temporary data interactions through the seamless minting and management of these short-lived NFTs.
+## 🛠 Technology Stack
+
+- **Frontend**: Vanilla JavaScript, Bootstrap, Ethers.js
+- **Backend**: Node.js, Express.js
+- **AI Integration**: Gaia AI for text transformation
+- **Blockchain**: Morph L2 (Ethereum Layer 2)
+- **Smart Contracts**: Solidity NFT contracts
+- **Database**: Persistent storage for analytics and community features
+
+## 🏃‍♂️ Quick Start
+
+### Prerequisites
+- Node.js (v16 or higher)
+- MetaMask or compatible Web3 wallet
+- Access to Morph Testnet
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd morphecho
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start the application
+npm start
+```
+
+Visit `http://localhost:3000` and connect your wallet to start sharing whispers!
+
+## 🔧 Configuration
+
+Create a `.env` file with the following variables:
+
+```env
+PORT=3000
+VITE_CONTRACT_ADDRESS=0x561C97731839A1C65070B424283A7cb3d41027Da
+VITE_GAIA_API_KEY=your-gaia-api-key
+VITE_GAIA_BASE_URL=your-gaia-endpoint
+
+# Database configuration (optional for enhanced features)
+DB_HOST=your-db-host
+DB_PORT=3306
+DB_NAME=morphecho
+DB_USER=your-username
+DB_PASSWORD=your-password
+```
+
+## 🎯 How It Works
+
+1. **Connect Wallet**: Connect your MetaMask to Morph Testnet
+2. **Write Whisper**: Share your thoughts or feelings
+3. **AI Transformation**: Your text is intelligently scrambled for privacy
+4. **Mint NFT**: Create a temporary NFT that expires automatically
+5. **Community Interaction**: Others can heart your whispers or report inappropriate content
+6. **Ephemeral Nature**: Whispers disappear forever when they expire
+
+## 🤖 AI Integration
+
+MorphEcho uses advanced AI to transform your personal thoughts into poetic, anonymous whispers:
+
+- **Privacy Preservation**: Removes identifying information while maintaining emotional core
+- **Creative Transformation**: Converts thoughts into metaphors, haikus, or abstract expressions  
+- **Token Tracking**: Monitors AI usage for transparency and analytics
+- **Multiple Styles**: Supports various transformation approaches for diverse expression
+
+## 🌐 Blockchain Features
+
+### Smart Contract Capabilities
+- **Temporary NFTs**: Whispers are minted as NFTs with built-in expiration
+- **Automatic Cleanup**: Expired whispers are automatically marked as "forgotten"
+- **On-Chain Feed**: Real-time whisper discovery through blockchain events
+- **Decentralized Storage**: No central authority controls your whispers
+
+### Morph L2 Benefits
+- **Low Gas Fees**: Affordable minting and interaction costs
+- **Fast Transactions**: Quick confirmation times for seamless UX
+- **Ethereum Security**: Inherits security from Ethereum mainnet
+- **Scalable**: High throughput for community growth
+
+## 📊 Community Analytics
+
+The platform provides real-time insights:
+- **AI Tokens Consumed**: Total AI processing across all users
+- **Active Whispers**: Current number of live whispers
+- **Community Size**: Total unique wallet addresses
+- **Engagement Metrics**: Hearts and community interactions
+
+## 🛡 Privacy & Safety
+
+- **Anonymous by Design**: No personal data collection or storage
+- **AI-Scrambled Content**: Original thoughts are never stored
+- **Community Moderation**: User-driven reporting system
+- **Temporary Nature**: All content automatically expires
+- **Decentralized**: No single point of control or censorship
+
+## 🤝 Contributing
+
+We welcome contributions to make MorphEcho better:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](link-to-issues)
+- **Community**: [Discord/Telegram Link]
+- **Documentation**: [Wiki/Docs Link]
+
+## 🙏 Acknowledgments
+
+- Built for the Morph L2 ecosystem
+- Powered by Gaia AI for intelligent text transformation
+- Inspired by the need for anonymous, ephemeral digital expression
+
+---
+
+**MorphEcho** - Where thoughts become whispers, and whispers become art. 🎭✨

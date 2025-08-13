@@ -1,19 +1,20 @@
 {
   "name": "morph-echo-dapp",
   "version": "1.0.0",
-  "description": "Simple frontend for MorphEcho dApp using Node.js and Express",
+  "description": "MorphEcho offers an anonymous outlet for ephemeral thoughts. It uses AI to obfuscate identity and creates temporary, on-chain NFTs, letting you express yourself freely without fear of judgment or a permanent digital footprint.",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Harish Kotra",
+  "license": "MIT",
   "dependencies": {
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
     "express": "^5.1.0",
+    "mysql2": "^3.11.4",
     "openai": "^5.11.0"
   },
   "devDependencies": {

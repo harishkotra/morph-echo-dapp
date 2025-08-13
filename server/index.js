@@ -4,6 +4,10 @@ const path = require('path');
 const fs = require('fs').promises;
 const OpenAI = require('openai');
 
+// Database imports
+const { testConnection, isDatabaseAvailable } = require('../database/connection');
+const { User, AIOperation, Whisper, Report, Favorite, Statistics } = require('../database/models');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -16,7 +20,7 @@ app.get('/', async (req, res) => {
         let htmlContent = await fs.readFile(htmlFilePath, 'utf8');
 
         const contractAddress = process.env.VITE_CONTRACT_ADDRESS;
-        console.log("Server - Contract Address from .env:", contractAddress);
+        //console.log("Server - Contract Address from .env:", contractAddress);
 
         if (!contractAddress) {
             console.error("Server Error: VITE_CONTRACT_ADDRESS not found in .env");
@@ -26,7 +30,7 @@ app.get('/', async (req, res) => {
         const placeholder = '0x561C97731839A1C65070B424283A7cb3d41027Da';
         if (htmlContent.includes(placeholder)) {
             htmlContent = htmlContent.replace(placeholder, contractAddress);
-            console.log("Server - Contract Address injected successfully:", contractAddress); // Debug log
+            //console.log("Server - Contract Address injected successfully:", contractAddress); // Debug log
         } else {
             console.error("Server Error: Placeholder 'YOUR_FALLBACK_ADDRESS' not found in index.html");
         }
@@ -40,11 +44,13 @@ app.get('/', async (req, res) => {
 });
 
 app.post('/api/scramble', express.json(), async (req, res) => {
-    const { rawWhisper } = req.body;
+    const { rawWhisper, walletAddress, operationType = 'scramble' } = req.body;
     if (!rawWhisper) {
         return res.status(400).json({ error: 'Raw whisper text is required.' });
     }
 
+    const startTime = Date.now();
+    
     // Use environment variables from .env
     const GAIA_API_KEY = process.env.VITE_GAIA_API_KEY;
     const GAIA_BASE_URL = process.env.VITE_GAIA_BASE_URL;
@@ -90,8 +96,32 @@ Scrambled Whisper:`;
             chatCompletion.choices[0].message.content
         ) {
             const scrambledText = chatCompletion.choices[0].message.content.trim();
-            console.log("Received scrambled whisper from Gaia:", scrambledText);
-            return res.json({ scrambledText });
+            const processingTime = Date.now() - startTime;
+            const tokensConsumed = chatCompletion.usage?.total_tokens || 0;
+            
+            //console.log("Received scrambled whisper from Gaia:", scrambledText);
+            
+            // Track AI operation if wallet address is provided
+            if (walletAddress) {
+                try {
+                    const user = await User.findOrCreateByWallet(walletAddress);
+                    await AIOperation.create(
+                        user.id,
+                        operationType,
+                        rawWhisper,
+                        scrambledText,
+                        tokensConsumed,
+                        "Llama-3-Groq-8B-Tool",
+                        processingTime,
+                        true
+                    );
+                } catch (trackingError) {
+                    console.error('Error tracking AI operation:', trackingError);
+                    // Don't fail the request if tracking fails
+                }
+            }
+            
+            return res.json({ scrambledText, operationId: walletAddress ? 'tracked' : null });
         } else {
             console.error("Gaia API returned an unexpected response format:", chatCompletion);
             return res.status(500).json({ error: 'Gaia API returned an unexpected response format.' });
@@ -153,7 +183,7 @@ app.get('/api/prompts', async (req, res) => {
 
         if (chatCompletion.choices?.[0]?.message?.content) {
             let content = chatCompletion.choices[0].message.content.trim();
-            console.log("Raw AI Prompt Response:", content);
+            //console.log("Raw AI Prompt Response:", content);
 
             // Attempt to parse the JSON response
             try {
@@ -235,6 +265,244 @@ Scrambled Whisper:`;
 });
 */
 // --- End Optional Proxy ---
+
+// API endpoint to report a whisper
+app.post('/api/report', express.json(), async (req, res) => {
+    try {
+        // Check if database is available (without creating new connections)
+        if (!isDatabaseAvailable()) {
+            return res.status(503).json({ error: 'Database service temporarily unavailable. Please try again later.' });
+        }
+        
+        const { tokenId, walletAddress, reason, additionalDetails } = req.body;
+        
+        if (!tokenId || !walletAddress || !reason) {
+            return res.status(400).json({ error: 'Token ID, wallet address, and reason are required.' });
+        }
+
+        // Check if user has already reported this whisper using tokenId directly
+        const hasReported = await Report.hasUserReportedByTokenId(tokenId, walletAddress);
+        if (hasReported) {
+            return res.status(409).json({ error: 'You have already reported this whisper.' });
+        }
+
+        // Create the report using tokenId directly
+        const reportId = await Report.createByTokenId(tokenId, walletAddress, reason, additionalDetails);
+        
+        res.json({ 
+            success: true, 
+            reportId,
+            message: 'Report submitted successfully. Thank you for helping keep our community safe.' 
+        });
+    } catch (error) {
+        console.error('Error submitting report:', error);
+        res.status(500).json({ error: error.message || 'Failed to submit report.' });
+    }
+});
+
+// API endpoint to toggle favorite/heart on a whisper
+app.post('/api/favorite', express.json(), async (req, res) => {
+    try {
+        // Check if database is available (without creating new connections)
+        if (!isDatabaseAvailable()) {
+            return res.status(503).json({ error: 'Database service temporarily unavailable. Please try again later.' });
+        }
+        
+        const { tokenId, walletAddress } = req.body;
+        
+        if (!tokenId || !walletAddress) {
+            return res.status(400).json({ error: 'Token ID and wallet address are required.' });
+        }
+
+        // Toggle the favorite using tokenId directly
+        const result = await Favorite.toggleByTokenId(tokenId, walletAddress);
+        
+        res.json({ 
+            success: true, 
+            favorited: result.favorited,
+            action: result.action,
+            message: `Whisper ${result.action} ${result.favorited ? 'to' : 'from'} favorites.`
+        });
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        res.status(500).json({ error: error.message || 'Failed to update favorite.' });
+    }
+});
+
+// API endpoint to get user's favorite whispers
+app.get('/api/favorites/:walletAddress', async (req, res) => {
+    try {
+        if (!isDatabaseAvailable()) {
+            return res.status(503).json({ error: 'Database service temporarily unavailable.' });
+        }
+        
+        const { walletAddress } = req.params;
+        const limit = parseInt(req.query.limit) || 20;
+        
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'Wallet address is required.' });
+        }
+
+        const favorites = await Favorite.getByUser(walletAddress, limit);
+        res.json({ favorites });
+    } catch (error) {
+        console.error('Error fetching favorites:', error);
+        res.status(500).json({ error: 'Failed to fetch favorites.' });
+    }
+});
+
+// API endpoint to check if user has favorited a whisper
+app.get('/api/favorite-status/:tokenId/:walletAddress', async (req, res) => {
+    try {
+        if (!isDatabaseAvailable()) {
+            return res.json({ isFavorited: false }); // Default to false when DB unavailable
+        }
+        
+        const { tokenId, walletAddress } = req.params;
+        
+        // Check favorite status using tokenId directly
+        const isFavorited = await Favorite.isUserFavoriteByTokenId(tokenId, walletAddress);
+        res.json({ isFavorited });
+    } catch (error) {
+        console.error('Error checking favorite status:', error);
+        res.status(500).json({ error: 'Failed to check favorite status.' });
+    }
+});
+
+// API endpoint to get application statistics
+app.get('/api/statistics', async (req, res) => {
+    try {
+        // Check if database is available (without creating new connections)
+        if (!isDatabaseAvailable()) {
+            // Return default stats when database is unavailable
+            return res.json({
+                total_ai_tokens_consumed: 0,
+                total_whispers_minted: 0,
+                total_users_connected: 0,
+                total_reports_submitted: 0,
+                total_favorites_given: 0
+            });
+        }
+        
+        const stats = await Statistics.getAll();
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching statistics:', error);
+        // If there's a database error, mark as unavailable and return defaults
+        if (error.code === 'ECONNRESET' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+            console.warn('Database connection lost, marking as unavailable');
+            return res.json({
+                total_ai_tokens_consumed: 0,
+                total_whispers_minted: 0,
+                total_users_connected: 0,
+                total_reports_submitted: 0,
+                total_favorites_given: 0
+            });
+        }
+        res.status(500).json({ error: 'Failed to fetch statistics.' });
+    }
+});
+
+// API endpoint to track AI operations and update user data
+app.post('/api/track-ai-operation', express.json(), async (req, res) => {
+    try {
+        if (!isDatabaseAvailable()) {
+            // Silently succeed when database is unavailable (tracking is optional)
+            return res.json({ success: true, message: 'AI operation completed (tracking unavailable).' });
+        }
+        
+        const { 
+            walletAddress, 
+            operationType, 
+            originalText, 
+            scrambledText, 
+            tokensConsumed, 
+            modelUsed, 
+            processingTime,
+            success = true,
+            errorMessage = null
+        } = req.body;
+        
+        if (!walletAddress || !operationType || !originalText) {
+            return res.status(400).json({ error: 'Wallet address, operation type, and original text are required.' });
+        }
+
+        // Find or create user
+        const user = await User.findOrCreateByWallet(walletAddress);
+        
+        // Create AI operation record
+        const operationId = await AIOperation.create(
+            user.id, 
+            operationType, 
+            originalText, 
+            scrambledText, 
+            tokensConsumed || 0, 
+            modelUsed, 
+            processingTime,
+            success,
+            errorMessage
+        );
+        
+        res.json({ 
+            success: true, 
+            operationId,
+            message: 'AI operation tracked successfully.' 
+        });
+    } catch (error) {
+        console.error('Error tracking AI operation:', error);
+        res.status(500).json({ error: 'Failed to track AI operation.' });
+    }
+});
+
+// API endpoint to track whisper minting
+app.post('/api/track-whisper', express.json(), async (req, res) => {
+    try {
+        if (!isDatabaseAvailable()) {
+            // Silently succeed when database is unavailable (tracking is optional)
+            return res.json({ success: true, message: 'Whisper minted successfully (tracking unavailable).' });
+        }
+        
+        const { 
+            tokenId, 
+            walletAddress, 
+            aiOperationId,
+            scrambledText, 
+            durationSeconds, 
+            expiryTimestamp, 
+            txHash, 
+            blockNumber 
+        } = req.body;
+        
+        if (!tokenId || !walletAddress || !scrambledText) {
+            return res.status(400).json({ error: 'Token ID, wallet address, and scrambled text are required.' });
+        }
+
+        // Find or create user
+        const user = await User.findOrCreateByWallet(walletAddress);
+        
+        // Create whisper record
+        const whisperId = await Whisper.create(
+            tokenId, 
+            user.id, 
+            aiOperationId || null,
+            scrambledText, 
+            durationSeconds, 
+            expiryTimestamp, 
+            txHash || null, 
+            blockNumber || null
+        );
+        
+        res.json({ 
+            success: true, 
+            whisperId,
+            message: 'Whisper tracked successfully.' 
+        });
+    } catch (error) {
+        console.error('Error tracking whisper:', error);
+        res.status(500).json({ error: 'Failed to track whisper.' });
+    }
+});
+
 app.get('/api/config', (req, res) => {
     const config = {
         contractAddress: process.env.VITE_CONTRACT_ADDRESS || null
@@ -246,6 +514,24 @@ app.get('/api/config', (req, res) => {
     res.json(config);
 });
 
-app.listen(PORT, () => {
-    console.log(`MorphEcho dApp server listening at http://localhost:${PORT}`);
-});
+// Initialize database connection and start server
+async function startServer() {
+    // Test database connection
+    const dbConnected = await testConnection();
+    if (!dbConnected) {
+        console.warn('⚠️  Database connection failed. Some features may not work properly.');
+        console.warn('   📝 Reports, favorites, and statistics will be disabled');
+        console.warn('   🔧 Check your database credentials in .env file');
+    }
+
+    app.listen(PORT, () => {
+        //console.log(`🚀 MorphEcho dApp server listening at http://localhost:${PORT}`);
+        if (dbConnected) {
+            //console.log('✅ Database features enabled (reports, favorites, statistics)');
+        } else {
+            //console.log('⚠️  Running in basic mode (no database features)');
+        }
+    });
+}
+
+startServer();

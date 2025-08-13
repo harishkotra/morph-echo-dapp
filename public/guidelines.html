@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Community Guidelines - MorphEcho</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Simple styles for the guidelines page content */
@@ -55,8 +57,17 @@
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
-    <div class="guidelines-container">
-        <h1>MorphEcho Community Guidelines</h1>
+    <div id="app">
+        <div class="guidelines-container">
+        <header class="text-center my-6">
+            <a href="/" class="flex items-center text-gray-900 font-bold text-xl">
+                <img src="/android-chrome-192x192.png" alt="MorphEcho Logo" class="h-8 mr-2" style="margin: 0 auto;">
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900">MorphEcho</h1>
+            <p class="text-gray-600 text-sm">Share ephemeral, AI-scrambled whispers 🤫.</p>
+        </header>
+        
+        <h1>Community Guidelines</h1>
 
         <p>Welcome to MorphEcho, a space for ephemeral, anonymous expression. To keep this space respectful and enjoyable for everyone, please follow these guidelines:</p>
 
@@ -89,6 +100,55 @@
         <p>By using MorphEcho, you agree to these guidelines.</p>
 
         <a href="/" class="back-link">Back to MorphEcho</a>
+        </div>
     </div>
+
+    <!-- App Footer -->
+    <div id="app-footer" class="mt-4"> 
+        <footer class="text-center text-xs text-gray-500 py-3 bg-white border-top sticky-bottom">
+            <!-- Statistics Section -->
+            <div id="app-statistics" class="d-flex justify-content-center gap-3 flex-wrap mb-2">
+                <span id="total-tokens-stat" class="text-xs">AI Tokens Used: <strong>Loading...</strong></span>
+                <span id="total-whispers-stat" class="text-xs">Total Whispers: <strong>Loading...</strong></span>
+                <span id="total-users-stat" class="text-xs">Community Members: <strong>Loading...</strong></span>
+            </div>
+            
+            <p class="mb-1">MorphEcho - Decentralized Whispers</p>
+            <p>
+                <a href="/" class="text-blue-500 hover:underline">Back to MorphEcho</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Load statistics for guidelines page
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/statistics');
+                if (response.ok) {
+                    const stats = await response.json();
+                    
+                    const totalTokensElement = document.getElementById('total-tokens-stat');
+                    const totalWhispersElement = document.getElementById('total-whispers-stat');
+                    const totalUsersElement = document.getElementById('total-users-stat');
+                    
+                    if (totalTokensElement) {
+                        totalTokensElement.innerHTML = `AI Tokens Used: <strong>${stats.total_ai_tokens_consumed?.toLocaleString() || 0}</strong>`;
+                    }
+                    if (totalWhispersElement) {
+                        totalWhispersElement.innerHTML = `Total Whispers: <strong>${stats.total_whispers_minted?.toLocaleString() || 0}</strong>`;
+                    }
+                    if (totalUsersElement) {
+                        totalUsersElement.innerHTML = `Community Members: <strong>${stats.total_users_connected?.toLocaleString() || 0}</strong>`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Load statistics when page loads
+        document.addEventListener('DOMContentLoaded', loadStatistics);
+    </script>
 </body>
 </html>

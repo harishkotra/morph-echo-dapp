@@ -77,9 +77,9 @@ const noWhispersMessage = document.getElementById('no-whispers-message');
 // --- Utility Functions ---
 
 if (disconnectButton) {
-    console.log("Attaching listener to disconnect button."); 
+    //console.log("Attaching listener to disconnect button."); 
     disconnectButton.addEventListener('click', async (event) => {
-        console.log("Disconnect button clicked."); 
+        //console.log("Disconnect button clicked."); 
         event.stopPropagation(); // Prevent dropdown from closing immediately
         await disconnectWallet();
         // Note: Hiding the dropdown menu is usually handled by Bootstrap automatically
@@ -91,13 +91,13 @@ if (disconnectButton) {
 
 if (walletButton) {
     walletButton.addEventListener('click', async (event) => {
-        console.log("Wallet icon/button clicked.");
+        //console.log("Wallet icon/button clicked.");
         event.stopPropagation();
         if (!signer || !whisperNFTContract) {
-            console.log("Wallet icon clicked, initiating connection...");
+            //console.log("Wallet icon clicked, initiating connection...");
             await initWallet();
         } else {
-            console.log("Wallet already connected. Click opens menu (handled by BS dropdown).");
+            //console.log("Wallet already connected. Click opens menu (handled by BS dropdown).");
         }
     });
 }
@@ -137,14 +137,14 @@ function isValidEthereumAddress(address) {
 // Function to load ABI from public folder
 async function loadABI() {
     try {
-        console.log("Attempting to load ABI from /WhisperNFT.json");
+        //console.log("Attempting to load ABI from /WhisperNFT.json");
         const response = await fetch('/WhisperNFT.json');
         if (!response.ok) {
             throw new Error(`Failed to load ABI: ${response.status} ${response.statusText}`);
         }
         const abiData = await response.json();
         WHISPER_NFT_ABI = abiData.abi;
-        console.log("ABI loaded successfully.");
+        //console.log("ABI loaded successfully.");
         return true;
     } catch (error) {
         console.error("Error loading ABI:", error);
@@ -163,7 +163,7 @@ async function loadConfig() {
         const config = await response.json();
         if (config.contractAddress) {
             CONTRACT_ADDRESS = config.contractAddress;
-            console.log("Client - Contract Address fetched from /api/config:", CONTRACT_ADDRESS);
+            //console.log("Client - Contract Address fetched from /api/config:", CONTRACT_ADDRESS);
             return true;
         } else {
             throw new Error("Contract address missing in server response.");
@@ -175,13 +175,19 @@ async function loadConfig() {
 }
 
 // Function to scramble whisper using the SECURE proxy endpoint
-async function scrambleWhisperViaProxy(rawWhisper) {
+async function scrambleWhisperViaProxy(rawWhisper, operationType = 'scramble') {
+    const walletAddress = signer ? await signer.getAddress() : null;
+    
     const response = await fetch('/api/scramble', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ rawWhisper })
+        body: JSON.stringify({ 
+            rawWhisper, 
+            walletAddress,
+            operationType 
+        })
     });
 
     if (!response.ok) {
@@ -199,7 +205,7 @@ let BAD_WORDS_SET = null;
 
 async function loadBadWords() {
     if (BAD_WORDS_SET) {
-        //console.log("Bad words already loaded.");
+        ////console.log("Bad words already loaded.");
         return true;
     }
 
@@ -233,7 +239,7 @@ function containsBadWords(text) {
         const regex = new RegExp(`\\b${escapedBadWord}\\b`, 'i');
 
         if (regex.test(text)) {
-            console.log(`Found bad word (whole word match): ${badWord}`);
+            //console.log(`Found bad word (whole word match): ${badWord}`);
             return true;
         }
     }
@@ -310,13 +316,13 @@ async function initWallet() {
             return false;
         }
 
-        console.log("Requesting accounts from wallet...");
+        //console.log("Requesting accounts from wallet...");
         await window.ethereum.request({ method: "eth_requestAccounts" });
 
         provider = new window.ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         const signerAddress = await signer.getAddress();
-        console.log("Wallet connected:", signerAddress);
+        //console.log("Wallet connected:", signerAddress);
 
         if (!CONTRACT_ADDRESS || !isValidEthereumAddress(CONTRACT_ADDRESS)) {
             console.error("Contract address not configured correctly or is invalid:", CONTRACT_ADDRESS);
@@ -324,13 +330,14 @@ async function initWallet() {
             return false; 
         }
 
-        console.log("DEBUG: Contract Address Used:", CONTRACT_ADDRESS);
-        console.log("DEBUG: ABI Snippet (totalSupply):", WHISPER_NFT_ABI?.find(item => item.name === "totalSupply"));
+        //console.log("DEBUG: Contract Address Used:", CONTRACT_ADDRESS);
+        //console.log("DEBUG: ABI Snippet (totalSupply):", WHISPER_NFT_ABI?.find(item => item.name === "totalSupply"));
 
         whisperNFTContract = new window.ethers.Contract(CONTRACT_ADDRESS, WHISPER_NFT_ABI, signer);
-        console.log("WhisperNFT contract instance created at:", CONTRACT_ADDRESS);
+        //console.log("WhisperNFT contract instance created at:", CONTRACT_ADDRESS);
         await updateUIConnected();
         loadWhisperFeed();
+        updateStatisticsDisplay(); // Update stats when wallet connects
         return true;
 
     } catch (error) {
@@ -342,7 +349,7 @@ async function initWallet() {
             userFriendlyMessage = "Wallet connection was rejected by the user.";
         } else if (error.code === -32002) { // Specific RPC Error Code for concurrent requests
             userFriendlyMessage = "Wallet connection prompt is already open. Please check your wallet extension and complete the request there.";
-            console.log("MetaMask connection request is already pending. User needs to check their wallet.");
+            //console.log("MetaMask connection request is already pending. User needs to check their wallet.");
         } else if (error.code === 'CALL_EXCEPTION' || error.code === 'BAD_DATA') {
              userFriendlyMessage = "Connected to wallet, but failed to interact with the smart contract. Please check the network and contract address.";
         } else if (error.message) {
@@ -367,13 +374,13 @@ async function initWallet() {
         // --- Crucially, reset the connection flag in the finally block ---
         // This ensures the flag is always reset, even if the function returns early
         // or throws an error in the catch block.
-        console.log("Wallet connection attempt finished (success or error).");
+        //console.log("Wallet connection attempt finished (success or error).");
         isConnectingWallet = false;
     }
 }
 
 async function mintWhisperNFT(scrambledText, durationSeconds) {
-    console.log("mintWhisperNFT called with:", { scrambledText, durationSeconds });
+    //console.log("mintWhisperNFT called with:", { scrambledText, durationSeconds });
 
     if (!whisperNFTContract || !signer) {
         throw new Error("Wallet not connected.");
@@ -391,14 +398,14 @@ async function mintWhisperNFT(scrambledText, durationSeconds) {
     }
 
     try {
-        console.log("Minting Whisper NFT...");
+        //console.log("Minting Whisper NFT...");
 
         const tx = await whisperNFTContract.mintWhisper(scrambledText, durationSeconds);
-        console.log("Transaction sent:", tx.hash);
+        //console.log("Transaction sent:", tx.hash);
 
 
         const receipt = await tx.wait();
-        console.log("Transaction confirmed:", receipt);
+        //console.log("Transaction confirmed:", receipt);
 
         let tokenId = null;
         if (receipt.logs) {
@@ -407,7 +414,7 @@ async function mintWhisperNFT(scrambledText, durationSeconds) {
                     const parsedLog = whisperNFTContract.interface.parseLog(log);
                     if (parsedLog && parsedLog.name === "WhisperMinted") {
                         tokenId = parsedLog.args.tokenId.toString();
-                        console.log("Minted Token ID:", tokenId);
+                        //console.log("Minted Token ID:", tokenId);
                         break;
                     }
                 } catch (e) {
@@ -423,7 +430,7 @@ async function mintWhisperNFT(scrambledText, durationSeconds) {
         if (error.code === 'ACTION_REJECTED' || (error.message && error.message.includes("user rejected"))) {
             message = "Transaction rejected by user.";
         } else if (error.code === 'CALL_EXCEPTION' || (error.message && (error.message.includes("execution reverted") || error.message.includes("revert") || error.reason === "require(false)"))) {
-            console.log("Detailed contract revert error (for debugging):", error);
+            //console.log("Detailed contract revert error (for debugging):", error);
             if (error.reason === "require(false)" || (error.message && error.message.includes('reason="require(false)"'))) {
                 message = "The smart contract strongly rejected the minting request. This could be due to:" +
                           "<ul class='list-disc pl-5 mt-1 space-y-1'>" +
@@ -437,7 +444,7 @@ async function mintWhisperNFT(scrambledText, durationSeconds) {
                  message = "The smart contract rejected the minting request. It might be due to cooldown, max supply, or invalid input.";
             }
         } else {
-            console.log("Detailed unexpected error:", error);
+            //console.log("Detailed unexpected error:", error);
             message = "An unexpected error occurred: " + (error.message || "Unknown error");
         }
         throw new Error(message);
@@ -452,7 +459,7 @@ async function fetchRecentWhispers(limit = 10) {
     try {
         const totalSupply = await whisperNFTContract.totalSupply();
         const latestId = Number(totalSupply);
-        console.log("Current total supply:", latestId);
+        //console.log("Current total supply:", latestId);
 
         const whispers = [];
         for (let i = 0; i < limit && (latestId - i) > 0; i++) {
@@ -469,7 +476,7 @@ async function fetchRecentWhispers(limit = 10) {
                     try {
                         text = await whisperNFTContract.getWhisperText(tokenId);
                     } catch (textErr) {
-                        console.log(`Could not fetch text for token ${tokenId}:`, textErr.message);
+                        //console.log(`Could not fetch text for token ${tokenId}:`, textErr.message);
                     }
                 }
 
@@ -499,12 +506,12 @@ async function fetchRecentWhispers(limit = 10) {
 async function updateUIConnected() {
     try {
         const address = await signer.getAddress();
-        console.log("Wallet connected, updating UI for address:", address);
+        //console.log("Wallet connected, updating UI for address:", address);
 
         walletIconDisconnected.classList.add('d-none');
         walletIconConnected.classList.remove('d-none');
         const displayAddress = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-        console.log("Obfuscated address to display:", displayAddress);
+        //console.log("Obfuscated address to display:", displayAddress);
         if (walletConnectedAddress) {
             walletConnectedAddress.textContent = displayAddress;
             walletConnectedAddress.title = address;
@@ -578,7 +585,7 @@ async function updateUIConnected() {
 }
 
 function updateUIDisconnected() {
-    console.log("Updating UI to disconnected state.");
+    //console.log("Updating UI to disconnected state.");
     if (walletIconDisconnected) walletIconDisconnected.classList.remove('d-none'); 
     if (walletIconConnected) walletIconConnected.classList.add('d-none');
     if (walletInfoConnected) walletInfoConnected.classList.add('d-none'); 
@@ -660,19 +667,19 @@ function showLoadingSpinner(isLoading) {
 }
 
 function showError(targetDiv, message) {
-    console.log("DEBUG showError called:", { targetDiv, message }); // Add this line
+    //console.log("DEBUG showError called:", { targetDiv, message }); // Add this line
     if (!targetDiv) {
         console.error("DEBUG showError: targetDiv is null!"); // Add this check
         return; // Exit if targetDiv is null to prevent errors
     }
     const plainText = message.replace(/<[^>]*>?/gm, '');
-    console.log("DEBUG showError: Setting textContent to:", plainText); // Add this line
+    //console.log("DEBUG showError: Setting textContent to:", plainText); // Add this line
     targetDiv.textContent = plainText;
-    console.log("DEBUG showError: Removing d-none, adding alert classes"); // Add this line
+    //console.log("DEBUG showError: Removing d-none, adding alert classes"); // Add this line
     targetDiv.classList.remove('d-none');
     // targetDiv.classList.remove('hidden'); // If needed for Tailwind compat
     targetDiv.classList.add('alert', 'alert-danger');
-    console.log("DEBUG showError: Finished."); // Add this line
+    //console.log("DEBUG showError: Finished."); // Add this line
 }
 
 function hideError(targetDiv) {
@@ -681,7 +688,7 @@ function hideError(targetDiv) {
 
 async function loadWhisperFeed() {
     if (!whisperNFTContract) {
-        console.log("Feed load skipped: Wallet not connected, contract not initialized.");
+        //console.log("Feed load skipped: Wallet not connected, contract not initialized.");
         showLoadingSpinner(false);
         hideError(feedErrorDiv);
         
@@ -788,19 +795,49 @@ function renderWhisperFeed(whispers) {
         flagButton.innerHTML = '<i class="bi bi-flag"></i> Flag'; // BS Icon + text
         flagButton.title = 'Report this whisper';
         flagButton.dataset.tokenId = whisper.tokenId;
-        flagButton.addEventListener('click', (event) => {
+        flagButton.addEventListener('click', async (event) => {
             event.stopPropagation();
-            const button = event.target.closest('button'); // Safer way to get button
+            const button = event.target.closest('button');
             const tokenId = button.dataset.tokenId;
-            console.log(`Flag button clicked for token ID: ${tokenId}`);
-            alert(`Whisper #${tokenId} has been flagged. Thank you for helping keep the community respectful.`);
-            // const flaggedTokens = JSON.parse(localStorage.getItem('flaggedWhispers') || '[]');
-            // if (!flaggedTokens.includes(tokenId)) {
-            //     flaggedTokens.push(tokenId);
-            //     localStorage.setItem('flaggedWhispers', JSON.stringify(flaggedTokens));
-            //     console.log(`Token ${tokenId} flagged. Updated list:`, flaggedTokens);
-            //     // Could visually update the button or card here
-            // }
+            
+            if (!signer) {
+                alert('Please connect your wallet to report whispers.');
+                return;
+            }
+            
+            // Show report modal/prompt
+            const reason = prompt(`Report this whisper for:\n\n1. hate_speech - Hate Speech & Harassment\n2. explicit_content - Explicit Content\n3. spam - Spam & Nonsense\n4. doxxing - Doxxing & Personal Information\n5. misinformation - Misinformation\n6. other - Other\n\nEnter the number (1-6) or reason:`);
+            
+            if (!reason) return;
+            
+            const reasonMap = {
+                '1': 'hate_speech',
+                '2': 'explicit_content', 
+                '3': 'spam',
+                '4': 'doxxing',
+                '5': 'misinformation',
+                '6': 'other'
+            };
+            
+            const selectedReason = reasonMap[reason] || reason;
+            
+            try {
+                button.disabled = true;
+                button.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Reporting...';
+                
+                await reportWhisper(tokenId, selectedReason);
+                
+                button.innerHTML = '<i class="bi bi-flag-fill text-warning"></i> Reported';
+                button.title = 'Already reported';
+                button.className = 'btn btn-sm btn-warning py-1 px-2';
+                alert('Report submitted successfully. Thank you for helping keep our community safe.');
+                
+            } catch (error) {
+                console.error('Error reporting whisper:', error);
+                alert(error.message || 'Failed to report whisper. Please try again.');
+                button.innerHTML = '<i class="bi bi-flag"></i> Flag';
+                button.disabled = false;
+            }
         });
 
         // --- Like Button ---
@@ -815,44 +852,63 @@ function renderWhisperFeed(whispers) {
 
         const likeCountSpan = document.createElement('span');
         likeCountSpan.className = 'ms-1';
-        const likesKey = `whisperLikes_${whisper.tokenId}`;
-        let likeCount = parseInt(localStorage.getItem(likesKey) || '0', 10);
-        likeCountSpan.textContent = likeCount > 0 ? likeCount : ''; // Show count or empty
-
-        const userLikesKey = `userLiked_${whisper.tokenId}`;
-        const userHasLiked = localStorage.getItem(userLikesKey) === 'true';
-        if (userHasLiked) {
-            likeIcon.className = 'bi bi-heart-fill text-danger'; // Filled icon, red color
-        }
+        
+        // Use backend data if available, fallback to localStorage for offline support
+        let likeCount = whisper.favorite_count || 0;
+        likeCountSpan.textContent = likeCount > 0 ? likeCount : '';
 
         likeButton.appendChild(likeIcon);
         likeButton.appendChild(likeCountSpan);
 
-        likeButton.addEventListener('click', (event) => {
+        // Check if user has favorited this whisper (async)
+        if (signer) {
+            checkFavoriteStatus(whisper.tokenId).then(isFavorited => {
+                if (isFavorited) {
+                    likeIcon.className = 'bi bi-heart-fill text-danger';
+                }
+            }).catch(error => {
+                console.error('Error checking favorite status:', error);
+            });
+        }
+
+        likeButton.addEventListener('click', async (event) => {
             event.stopPropagation();
+            
+            if (!signer) {
+                alert('Please connect your wallet to favorite whispers.');
+                return;
+            }
+            
             const button = event.currentTarget;
             const icon = button.querySelector('i');
             const countSpan = button.querySelector('span');
 
-            // Toggle like state
-            const currentlyLiked = icon.classList.contains('bi-heart-fill');
-            if (currentlyLiked) {
-                // Unlike
-                likeIcon.className = 'bi bi-heart';
-                likeCount--;
-                localStorage.setItem(userLikesKey, 'false');
-            } else {
-                // Like
-                likeIcon.className = 'bi bi-heart-fill text-danger';
-                likeCount++;
-                localStorage.setItem(userLikesKey, 'true');
+            try {
+                button.disabled = true;
+                const originalIcon = icon.className;
+                icon.className = 'spinner-border spinner-border-sm';
+                
+                const result = await toggleFavorite(whisper.tokenId);
+                
+                // Update UI based on result
+                if (result.favorited) {
+                    icon.className = 'bi bi-heart-fill text-danger';
+                    likeCount++;
+                } else {
+                    icon.className = 'bi bi-heart';
+                    likeCount--;
+                }
+                
+                countSpan.textContent = likeCount > 0 ? likeCount : '';
+                
+            } catch (error) {
+                console.error('Error toggling favorite:', error);
+                alert(error.message || 'Failed to update favorite. Please try again.');
+                // Restore original icon on error
+                icon.className = icon.classList.contains('bi-heart-fill') ? 'bi bi-heart-fill text-danger' : 'bi bi-heart';
+            } finally {
+                button.disabled = false;
             }
-
-            // Update localStorage count
-            localStorage.setItem(likesKey, likeCount);
-
-            // Update UI count
-            countSpan.textContent = likeCount > 0 ? likeCount : '';
         });
 
         likeButtonContainer.appendChild(likeButton);
@@ -898,6 +954,143 @@ function hashCode(str) {
     return hash.toString(16).padStart(6, '0'); // Convert to hex and pad to 6 digits
 }
 
+// Function to report a whisper
+async function reportWhisper(tokenId, reason, additionalDetails = '') {
+    if (!signer) {
+        throw new Error('Wallet not connected');
+    }
+    
+    const walletAddress = await signer.getAddress();
+    
+    const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tokenId,
+            walletAddress,
+            reason,
+            additionalDetails
+        })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to report whisper');
+    }
+    
+    return data;
+}
+
+// Function to toggle favorite on a whisper
+async function toggleFavorite(tokenId) {
+    if (!signer) {
+        throw new Error('Wallet not connected');
+    }
+    
+    const walletAddress = await signer.getAddress();
+    
+    const response = await fetch('/api/favorite', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tokenId,
+            walletAddress
+        })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to update favorite');
+    }
+    
+    return data;
+}
+
+// Function to check if user has favorited a whisper
+async function checkFavoriteStatus(tokenId) {
+    if (!signer) {
+        return false;
+    }
+    
+    try {
+        const walletAddress = await signer.getAddress();
+        const response = await fetch(`/api/favorite-status/${tokenId}/${walletAddress}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data.isFavorited;
+        }
+    } catch (error) {
+        console.error('Error checking favorite status:', error);
+    }
+    
+    return false;
+}
+
+// Function to get application statistics
+async function getAppStatistics() {
+    try {
+        const response = await fetch('/api/statistics');
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Error fetching statistics:', error);
+    }
+    return null;
+}
+
+// Function to update statistics display
+async function updateStatisticsDisplay() {
+    try {
+        const stats = await getAppStatistics();
+        if (stats) {
+            const totalTokensElement = document.getElementById('total-tokens-stat');
+            const totalWhispersElement = document.getElementById('total-whispers-stat');
+            const totalUsersElement = document.getElementById('total-users-stat');
+            
+            if (totalTokensElement) {
+                totalTokensElement.innerHTML = `AI Tokens Used: <strong>${stats.total_ai_tokens_consumed?.toLocaleString() || 0}</strong>`;
+            }
+            if (totalWhispersElement) {
+                totalWhispersElement.innerHTML = `Total Whispers: <strong>${stats.total_whispers_minted?.toLocaleString() || 0}</strong>`;
+            }
+            if (totalUsersElement) {
+                totalUsersElement.innerHTML = `Community Members: <strong>${stats.total_users_connected?.toLocaleString() || 0}</strong>`;
+            }
+            
+            //console.log('📊 Statistics updated:', stats);
+        } else {
+            console.warn('📊 No statistics data received');
+        }
+    } catch (error) {
+        console.error('📊 Error updating statistics:', error);
+        // Set fallback values if there's an error
+        const totalTokensElement = document.getElementById('total-tokens-stat');
+        const totalWhispersElement = document.getElementById('total-whispers-stat');
+        const totalUsersElement = document.getElementById('total-users-stat');
+        
+        if (totalTokensElement) totalTokensElement.innerHTML = `AI Tokens Used: <strong>Unavailable</strong>`;
+        if (totalWhispersElement) totalWhispersElement.innerHTML = `Total Whispers: <strong>Unavailable</strong>`;
+        if (totalUsersElement) totalUsersElement.innerHTML = `Community Members: <strong>Unavailable</strong>`;
+    }
+}
+
+// Function to start periodic statistics updates
+function startStatisticsUpdates() {
+    // Update immediately
+    updateStatisticsDisplay();
+    
+    // Update every 30 seconds
+    setInterval(updateStatisticsDisplay, 30000);
+    
+    //console.log('📊 Statistics auto-update started (every 30 seconds)');
+}
+
 // --- Event Listeners ---
 
 // Wallet Button Click and Tooltip
@@ -918,10 +1111,10 @@ walletButton?.addEventListener('click', async (event) => {
     }
     if (!whisperNFTContract || !signer) {
         // If disconnected, trigger the wallet connection flow
-        console.log("Wallet icon clicked, initiating connection...");
+        //console.log("Wallet icon clicked, initiating connection...");
         await initWallet();
     } else {
-        console.log("Wallet already connected, icon click might be for menu.");
+        //console.log("Wallet already connected, icon click might be for menu.");
     }
 });
 
@@ -938,14 +1131,14 @@ disconnectButton?.addEventListener('click', async (event) => {
 });
 
 async function disconnectWallet() {
-    console.log("Disconnecting wallet...");
+    //console.log("Disconnecting wallet...");
     provider = null;
     signer = null;
     whisperNFTContract = null;
     updateUIDisconnected();
 
     hideError(feedErrorDiv);
-    console.log("Wallet disconnected in UI.");
+    //console.log("Wallet disconnected in UI.");
 }
 
 // Connect Button in Main Flow
@@ -982,8 +1175,6 @@ scrambleButton?.addEventListener('click', async () => {
 
     try {
 
-        lastMintAttemptTime = Date.now();
-
         originalTextPreviewP.textContent = rawText;
         originalPreviewDiv.classList.remove('d-none'); 
 
@@ -998,7 +1189,8 @@ scrambleButton?.addEventListener('click', async () => {
         reScrambleButton?.classList.remove('d-none');
 
         durationSelectorDiv?.classList.remove('d-none'); 
-        mintButton?.classList.remove('d-none'); 
+        mintButton?.classList.remove('d-none');
+        updateStatisticsDisplay(); // Update stats after successful scramble 
     } catch (err) {
         console.error("Scrambling error:", err);
         showError(submitErrorDiv, err.message || "Failed to scramble whisper."); 
@@ -1015,7 +1207,7 @@ scrambleButton?.addEventListener('click', async () => {
 });
 
 reScrambleButton?.addEventListener('click', async () => {
-    console.log("Re-scramble button clicked!"); 
+    //console.log("Re-scramble button clicked!"); 
 
     if (!originalTextPreviewP) {
         console.error("originalTextPreviewP element not found!");
@@ -1029,7 +1221,7 @@ reScrambleButton?.addEventListener('click', async () => {
     }
 
     const rawText = originalTextPreviewP.textContent.trim(); 
-    console.log("Raw text for re-scrambling (after trim):", rawText);
+    //console.log("Raw text for re-scrambling (after trim):", rawText);
 
     if (!rawText) {
         console.warn("Re-scramble button clicked but no original text found.");
@@ -1040,13 +1232,13 @@ reScrambleButton?.addEventListener('click', async () => {
     const now = Date.now();
     if (now - lastReScrambleAttemptTime < RE_SCRAMBLE_COOLDOWN_MS) {
         const remainingTime = Math.ceil((RE_SCRAMBLE_COOLDOWN_MS - (now - lastReScrambleAttemptTime)) / 1000);
-        console.log(`Re-scramble rate limit hit. Remaining time: ${remainingTime} seconds.`);
+        //console.log(`Re-scramble rate limit hit. Remaining time: ${remainingTime} seconds.`);
         showError(submitErrorDiv, `Please wait ${remainingTime} second(s) before trying again.`);
         return;
     }
 
     try {
-        console.log("Starting re-scramble process...");
+        //console.log("Starting re-scramble process...");
         lastReScrambleAttemptTime = Date.now();
 
         scrambleSpinner?.classList.remove('d-none'); 
@@ -1054,7 +1246,7 @@ reScrambleButton?.addEventListener('click', async () => {
         reScrambleButton.disabled = true; 
         hideError(submitErrorDiv);
 
-        const scrambled = await scrambleWhisperViaProxy(rawText);
+        const scrambled = await scrambleWhisperViaProxy(rawText, 'rescramble');
 
         // Update the scrambled text display
         scrambledTextP.textContent = scrambled;
@@ -1063,7 +1255,7 @@ reScrambleButton?.addEventListener('click', async () => {
         console.error("Re-scrambling error:", err);
         showError(submitErrorDiv, err.message || "Failed to re-scramble whisper.");
     } finally {
-        console.log("Re-scramble process finished (success or error). Hiding spinner...");
+        //console.log("Re-scramble process finished (success or error). Hiding spinner...");
         scrambleSpinner?.classList.add('d-none'); 
         scrambleSpinnerText.textContent = "Scramble with AI";
         reScrambleButton.disabled = false;
@@ -1072,22 +1264,22 @@ reScrambleButton?.addEventListener('click', async () => {
 
 // Mint Button
 mintButton.addEventListener('click', async () => {
-    console.log("LOG A: Mint button clicked!");
+    //console.log("LOG A: Mint button clicked!");
 
     const scrambledText = scrambledTextP.textContent;
     const duration = parseInt(durationSelect.value, 10);
-    console.log("LOG A1: Scrambled Text:", scrambledText);
-    console.log("LOG A2: Duration Selected:", duration);
+    //console.log("LOG A1: Scrambled Text:", scrambledText);
+    //console.log("LOG A2: Duration Selected:", duration);
     const now = Date.now();
-    console.log("LOG A3: Current Time:", now, "Last Mint Attempt Time:", lastMintAttemptTime);
+    //console.log("LOG A3: Current Time:", now, "Last Mint Attempt Time:", lastMintAttemptTime);
     if (now - lastMintAttemptTime < MINT_ATTEMPT_COOLDOWN_MS) {
-        console.log("LOG A4: Mint attempt cooldown active. Remaining time:", MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime));
+        //console.log("LOG A4: Mint attempt cooldown active. Remaining time:", MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime));
         const remainingTime = Math.ceil((MINT_ATTEMPT_COOLDOWN_MS - (now - lastMintAttemptTime)) / 1000);
         showError(submitErrorDiv, `Please wait ${remainingTime} second(s) before trying again.`);
-        console.log("LOG A5: Mint attempt cooldown error shown.");
+        //console.log("LOG A5: Mint attempt cooldown error shown.");
         return;
     }
-    console.log("LOG A6: Passed initial cooldown check. Proceeding with minting...");
+    //console.log("LOG A6: Passed initial cooldown check. Proceeding with minting...");
     if (!scrambledText) {
         console.warn("LOG A7: No scrambled text available for minting.");
         showError(submitErrorDiv, "No scrambled text available.");
@@ -1100,38 +1292,66 @@ mintButton.addEventListener('click', async () => {
     //console.log("Passed initial checks, about to enter try block. scrambledText length:", scrambledText.length, "duration:", duration);
 
     try {
-        console.log("LOG D: Inside MAIN try block. First line executed.");
+        //console.log("LOG D: Inside MAIN try block. First line executed.");
         lastMintAttemptTime = Date.now();
 
-        console.log("Showing mint spinner...");
+        //console.log("Showing mint spinner...");
         mintSpinner?.classList.remove('d-none');
         mintSpinnerText.textContent = "Minting...";
         mintButton.disabled = true;
-        console.log("Spinner shown, button disabled.");
+        //console.log("Spinner shown, button disabled.");
 
-        console.log("Calling mintWhisperNFT with:", { scrambledText, duration });
+        //console.log("Calling mintWhisperNFT with:", { scrambledText, duration });
 
-        console.log("LOG E: Calling mintWhisperNFT...");
+        //console.log("LOG E: Calling mintWhisperNFT...");
         const result = await mintWhisperNFT(scrambledText, duration);
-        console.log("LOG F: Minting successful, result received:", result);
+        //console.log("LOG F: Minting successful, result received:", result);
 
         alert(`Whisper minted successfully!\nTx Hash: ${result.txHash}\nToken ID: ${result.tokenId || 'N/A'}`);
 
+        // Track the whisper in database
+        if (result.tokenId && signer) {
+            try {
+                const walletAddress = await signer.getAddress();
+                const expiryTimestamp = Math.floor(Date.now() / 1000) + duration;
+                
+                await fetch('/api/track-whisper', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tokenId: result.tokenId,
+                        walletAddress,
+                        aiOperationId: null, // Could be linked to scramble operation in future
+                        scrambledText,
+                        durationSeconds: duration,
+                        expiryTimestamp,
+                        txHash: result.txHash,
+                        blockNumber: null // Will be filled when available
+                    })
+                });
+                //console.log('✅ Whisper tracked in database');
+            } catch (trackingError) {
+                console.warn('⚠️ Failed to track whisper in database:', trackingError);
+                // Don't fail the whole process if tracking fails
+            }
+        }
+
         clearSubmitForm();
         loadWhisperFeed();
+        updateStatisticsDisplay(); // Update stats after successful mint
     } catch (err) {
 
-        console.log("LOG G: Inside MAIN catch block. Error caught.");
+        //console.log("LOG G: Inside MAIN catch block. Error caught.");
         console.error("Minting error (caught in event listener):", err);
         showError(submitErrorDiv, err.message || "Failed to mint whisper NFT.");
     } finally {
 
-        console.log("LOG H: Inside MAIN finally block. Cleaning up.");
+        //console.log("LOG H: Inside MAIN finally block. Cleaning up.");
         mintSpinner?.classList.add('d-none');
         mintSpinnerText.textContent = "Mint Whisper NFT";
         mintButton.disabled = false;
-        console.log("Spinner hidden, button re-enabled.");
-        console.log("LOG I: MAIN finally block finished.");
+        //console.log("Spinner hidden, button re-enabled.");
+        //console.log("LOG I: MAIN finally block finished.");
     }
 });
 
@@ -1167,4 +1387,5 @@ window.addEventListener('load', async () => {
         updateUIDisconnected();
     }
     loadWhisperFeed();
+    startStatisticsUpdates(); // Start periodic statistics updates
 });

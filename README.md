@@ -14,7 +14,9 @@ MorphEcho is a decentralized social platform that allows users to share ephemera
 
 ## 🚀 Live Demo
 
-Visit the live application: [Your Deployment URL]
+Visit the live application: https://morph-echo.up.railway.app
+Smart Contracts Repo: https://github.com/harishkotra/morph-echo-contracts
+Deployed Smart Contract: https://explorer-holesky.morphl2.io/address/0x561C97731839A1C65070B424283A7cb3d41027Da
 
 **Network**: Morph Testnet  
 **Contract**: `0x561C97731839A1C65070B424283A7cb3d41027Da`
@@ -121,31 +123,9 @@ The platform provides real-time insights:
 - **Temporary Nature**: All content automatically expires
 - **Decentralized**: No single point of control or censorship
 
-## 🤝 Contributing
-
-We welcome contributions to make MorphEcho better:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Issues**: [GitHub Issues](link-to-issues)
-- **Community**: [Discord/Telegram Link]
-- **Documentation**: [Wiki/Docs Link]
-
-## 🙏 Acknowledgments
-
-- Built for the Morph L2 ecosystem
-- Powered by Gaia AI for intelligent text transformation
-- Inspired by the need for anonymous, ephemeral digital expression
 
 ---
 

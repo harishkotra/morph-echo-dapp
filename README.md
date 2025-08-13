@@ -15,7 +15,9 @@ MorphEcho is a decentralized social platform that allows users to share ephemera
 ## 🚀 Live Demo
 
 Visit the live application: https://morph-echo.up.railway.app
+
 Smart Contracts Repo: https://github.com/harishkotra/morph-echo-contracts
+
 Deployed Smart Contract: https://explorer-holesky.morphl2.io/address/0x561C97731839A1C65070B424283A7cb3d41027Da
 
 **Network**: Morph Testnet  

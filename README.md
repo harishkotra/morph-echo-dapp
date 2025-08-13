@@ -26,6 +26,17 @@ Deployed Smart Contract: https://explorer-holesky.morphl2.io/address/0x561C97731
 **Network**: Morph Testnet  
 **Contract**: `0x561C97731839A1C65070B424283A7cb3d41027Da`
 
+## Screenshots
+
+<img width="2249" height="2260" alt="screencapture-morph-echo-up-railway-app-2025-08-14-02_17_38" src="https://github.com/user-attachments/assets/b2dc3ba4-925e-48ea-bd5f-0ee5dcff41a2" />
+<img width="1865" height="1343" alt="Screenshot at Aug 14 02-17-57" src="https://github.com/user-attachments/assets/ff583b47-90e8-4261-9cd1-32d9d647d8de" />
+<img width="2249" height="2579" alt="screencapture-morph-echo-up-railway-app-2025-08-14-02_18_03" src="https://github.com/user-attachments/assets/8bd56e06-e2c9-4b46-b16e-fb48f2c843ee" />
+<img width="2156" height="1340" alt="Screenshot at Aug 14 02-18-18" src="https://github.com/user-attachments/assets/39a250cb-8ecf-4fc2-a0bd-593d1712e076" />
+<img width="2086" height="1340" alt="Screenshot at Aug 14 02-18-32" src="https://github.com/user-attachments/assets/64dbd3b6-dae2-4da2-9b0c-a32babf29a6e" />
+<img width="1969" height="1340" alt="Screenshot at Aug 14 02-18-44" src="https://github.com/user-attachments/assets/47245656-32f1-4cda-9e42-a20a8c9d9507" />
+<img width="2249" height="2434" alt="screencapture-morph-echo-up-railway-app-2025-08-14-02_18_50" src="https://github.com/user-attachments/assets/cd610b2f-41fc-4267-9f60-7fa537aa65d9" />
+
+
 ## 🛠 Technology Stack
 
 - **Frontend**: Vanilla JavaScript, Bootstrap, Ethers.js

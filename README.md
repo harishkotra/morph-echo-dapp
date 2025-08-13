@@ -1,6 +1,7 @@
+<img width="1024" height="1024" alt="logo" src="https://github.com/user-attachments/assets/dd980663-7039-4198-9359-aaf49a78ceab" />
 # MorphEcho - Decentralized Whispers
 
-MorphEcho is a decentralized social platform that allows users to share ephemeral, AI-scrambled whispers as temporary NFTs on the Morph L2 blockchain. Experience anonymous, privacy-preserving communication where your thoughts are transformed by AI and automatically expire.
+MorphEcho is a decentralized social platform that allows users to share ephemeral, AI-scrambled whispers as temporary NFTs on the Morph L2 blockchain. Experience anonymous, privacy-preserving communication where your thoughts are transformed by locally running AI through a Gaia node and automatically expire.
 
 ## ✨ Features
 
@@ -43,7 +44,7 @@ Deployed Smart Contract: https://explorer-holesky.morphl2.io/address/0x561C97731
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/harishkotra/morph-echo-dapp/
 cd morphecho
 
 # Install dependencies
@@ -81,7 +82,7 @@ DB_PASSWORD=your-password
 
 1. **Connect Wallet**: Connect your MetaMask to Morph Testnet
 2. **Write Whisper**: Share your thoughts or feelings
-3. **AI Transformation**: Your text is intelligently scrambled for privacy
+3. **AI Transformation**: Your text is intelligently scrambled for privacy using a locally running [Gaia node](https://docs.gaianet.ai/getting-started/quick-start/)
 4. **Mint NFT**: Create a temporary NFT that expires automatically
 5. **Community Interaction**: Others can heart your whispers or report inappropriate content
 6. **Ephemeral Nature**: Whispers disappear forever when they expire
